@@ -5,12 +5,12 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-800 text-white py-8">
+    <footer className="text-white py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <h3 className="text-lg font-semibold mb-4">Ashoka Marketplace</h3>
-            <p className="text-gray-300 text-sm">
+            <p className="text-gray-400 text-sm">
               A platform for Ashoka University students to buy and sell
               second-hand items on campus.
             </p>
@@ -19,22 +19,22 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/" className="text-gray-300 hover:text-white">
+                <Link href="/" className="text-gray-400 hover:text-white">
                   Home
                 </Link>
               </li>
               <li>
-                <Link href="/browse" className="text-gray-300 hover:text-white">
+                <Link href="/browse" className="text-gray-400 hover:text-white">
                   Browse Items
                 </Link>
               </li>
               <li>
-                <Link href="/sell" className="text-gray-300 hover:text-white">
+                <Link href="/sell" className="text-gray-400 hover:text-white">
                   Sell an Item
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="text-gray-300 hover:text-white">
+                <Link href="/faq" className="text-gray-400 hover:text-white">
                   FAQ
                 </Link>
               </li>
@@ -44,14 +44,14 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/terms" className="text-gray-300 hover:text-white">
+                <Link href="/terms" className="text-gray-400 hover:text-white">
                   Terms of Service
                 </Link>
               </li>
               <li>
                 <Link
                   href="/privacy"
-                  className="text-gray-300 hover:text-white"
+                  className="text-gray-400 hover:text-white"
                 >
                   Privacy Policy
                 </Link>
@@ -59,7 +59,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/guidelines"
-                  className="text-gray-300 hover:text-white"
+                  className="text-gray-400 hover:text-white"
                 >
                   Community Guidelines
                 </Link>
@@ -69,10 +69,20 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4">Contact</h3>
             <ul className="space-y-2">
-              <li className="text-gray-300">support@ashokamarketplace.com</li>
-              <li className="text-gray-300">Report an Issue</li>
+              <li className="text-gray-400 hover:text-white">
+                <Link href="mailto:ieee.asb@ashoka.edu.in">ieee.asb@ashoka.edu.in</Link>
+              </li>
+              <li className="text-gray-400 hover:text-white">
+                <Link href="https://ieee-ashoka.in/contact" target="_blank">
+                  Report an Issue
+                </Link>
+              </li>
               <li className="flex space-x-4 mt-4">
-                <a href="#" className="text-gray-300 hover:text-white">
+                <Link
+                  href="#"
+                  target="_blank"
+                  className="text-gray-400 hover:text-white"
+                >
                   <span className="sr-only">Instagram</span>
                   <svg
                     className="h-6 w-6"
@@ -86,8 +96,12 @@ export default function Footer() {
                       clipRule="evenodd"
                     />
                   </svg>
-                </a>
-                <a href="#" className="text-gray-300 hover:text-white">
+                </Link>
+                <Link
+                  href="#"
+                  target="_blank"
+                  className="text-gray-400 hover:text-white"
+                >
                   <span className="sr-only">Twitter</span>
                   <svg
                     className="h-6 w-6"
@@ -97,13 +111,18 @@ export default function Footer() {
                   >
                     <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
                   </svg>
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
         </div>
         <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-400 text-sm">
           © {new Date().getFullYear()} Ashoka Marketplace. All rights reserved.
+          <br />
+          Developed and maintained by{" "}
+          <Link href="https://ieee-ashoka.in" target="_blank" className="text-gray-300 hover:text-white">
+            IEEE Ashoka Student Branch
+          </Link>{" "}
         </div>
       </div>
     </footer>

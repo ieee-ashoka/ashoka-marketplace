@@ -34,83 +34,103 @@ export type Database = {
   }
   public: {
     Tables: {
-      products: {
+      listings: {
         Row: {
           category: string | null
           condition: string | null
           created_at: string
           description: string | null
-          email: string | null
           expired_at: string | null
           id: number
-          image: string | null
+          image: string[] | null
           name: string | null
-          phn_no: number | null
           price: number | null
           user_id: string | null
-          username: string | null
         }
         Insert: {
           category?: string | null
           condition?: string | null
           created_at?: string
           description?: string | null
-          email?: string | null
           expired_at?: string | null
           id?: number
-          image?: string | null
+          image?: string[] | null
           name?: string | null
-          phn_no?: number | null
           price?: number | null
           user_id?: string | null
-          username?: string | null
         }
         Update: {
           category?: string | null
           condition?: string | null
           created_at?: string
           description?: string | null
-          email?: string | null
           expired_at?: string | null
           id?: number
-          image?: string | null
+          image?: string[] | null
           name?: string | null
-          phn_no?: number | null
           price?: number | null
           user_id?: string | null
-          username?: string | null
         }
         Relationships: []
       }
       profiles: {
         Row: {
+          avatar: string | null
           created_at: string
           email: string | null
-          first_name: string | null
           id: number
-          last_name: string | null
+          name: string | null
           phn_no: string | null
           user_id: string | null
         }
         Insert: {
+          avatar?: string | null
           created_at?: string
           email?: string | null
-          first_name?: string | null
           id?: number
-          last_name?: string | null
+          name?: string | null
           phn_no?: string | null
           user_id?: string | null
         }
         Update: {
+          avatar?: string | null
           created_at?: string
           email?: string | null
-          first_name?: string | null
           id?: number
-          last_name?: string | null
+          name?: string | null
           phn_no?: string | null
           user_id?: string | null
         }
         Relationships: []
+      }
+      wishlist: {
+        Row: {
+          created_at: string
+          id: number
+          listing_id: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          listing_id?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          listing_id?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

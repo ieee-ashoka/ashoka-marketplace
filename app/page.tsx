@@ -1,28 +1,61 @@
 "use client";
 import Link from "next/link";
-import { ChevronRight, Tag, Clock, Truck } from "lucide-react";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import {
+  ChevronRight,
+  Tag,
+  Clock,
+  Truck,
+  BookCopy,
+  Cable,
+  Lamp,
+  Shirt,
+  Tags,
+  House,
+} from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { subDays } from "date-fns";
 import { Tables } from "@/types/database.types";
+import { Button } from "@heroui/react";
+import Image from "next/image";
 
 export default function Home() {
   const categories = [
-    { name: "Textbooks", icon: "📚", color: "bg-blue-100 dark:bg-blue-900" },
+    {
+      name: "Textbooks",
+      icon: BookCopy,
+      color: "bg-blue-100 dark:bg-blue-900",
+      iconColor: "text-blue-600 dark:text-blue-400",
+    },
     {
       name: "Electronics",
-      icon: "💻",
+      icon: Cable,
       color: "bg-purple-100 dark:bg-purple-900",
+      iconColor: "text-purple-600 dark:text-purple-400",
     },
     {
       name: "Furniture",
-      icon: "🪑",
+      icon: Lamp,
       color: "bg-yellow-100 dark:bg-yellow-900",
+      iconColor: "text-yellow-600 dark:text-yellow-400",
     },
-    { name: "Clothing", icon: "👕", color: "bg-green-100 dark:bg-green-900" },
-    { name: "Accessories", icon: "🎒", color: "bg-red-100 dark:bg-red-900" },
-    { name: "Decor", icon: "🏠", color: "bg-orange-100 dark:bg-orange-900" },
+    {
+      name: "Clothing",
+      icon: Shirt,
+      color: "bg-green-100 dark:bg-green-900",
+      iconColor: "text-green-600 dark:text-green-400",
+    },
+    {
+      name: "Accessories",
+      icon: Tags,
+      color: "bg-red-100 dark:bg-red-900",
+      iconColor: "text-red-600 dark:text-red-400",
+    },
+    {
+      name: "Decor",
+      icon: House,
+      color: "bg-orange-100 dark:bg-orange-900",
+      iconColor: "text-orange-600 dark:text-orange-400",
+    },
   ];
 
   // Transform the featuredListings data to match the product schema
@@ -30,8 +63,8 @@ export default function Home() {
     {
       id: 1,
       name: "Economics Textbook",
-      price: 800,
-      image: "/placeholder-book.jpg",
+      price: null,
+      image: ["/images/placeholder-books.jpg"],
       username: "Priya M.",
       created_at: subDays(new Date(), 2).toISOString(),
       category: "Textbooks",
@@ -40,7 +73,7 @@ export default function Home() {
       email: null,
       expired_at: null,
       phn_no: null,
-      user_id: null
+      user_id: null,
     },
     {
       id: 2,
@@ -55,14 +88,13 @@ export default function Home() {
       email: null,
       expired_at: null,
       phn_no: null,
-      user_id: null
-
+      user_id: null,
     },
     {
       id: 3,
       name: "Portable Speaker",
       price: 1200,
-      image: "/placeholder-speaker.jpg",
+      image: ["/placeholder-speaker.jpg"],
       username: "Zara T.",
       created_at: subDays(new Date(), 1).toISOString(),
       category: "Electronics",
@@ -71,31 +103,31 @@ export default function Home() {
       email: null,
       expired_at: null,
       phn_no: null,
-      user_id: null
+      user_id: null,
     },
     {
       id: 4,
       name: "Room Bookshelf",
       price: 1500,
-      image: "/placeholder-shelf.jpg",
+      image: ["/placeholder-shelf.jpg"],
       username: "Rohan D.",
       created_at: subDays(new Date(), 3).toISOString(),
       category: "Furniture",
       condition: null,
-      description: "Sturdy wooden bookshelf, perfect for dorm rooms. Holds up to 50 books.",
+      description:
+        "Sturdy wooden bookshelf, perfect for dorm rooms. Holds up to 50 books.",
       email: null,
       expired_at: null,
       phn_no: null,
-      user_id: null
-    }
+      user_id: null,
+    },
   ];
 
   return (
     <main className="min-h-screen bg-background">
-      <Navbar />
 
       {/* Hero Section */}
-      <div className="relative bg-indigo-800 dark:bg-indigo-900 overflow-hidden">
+      <div className="relative  bg-gradient-to-r from-indigo-900 to-indigo-800 dark:from-indigo-950 dark:to-indigo-900 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative z-10 py-16 md:py-24 lg:py-32">
             <div className="max-w-2xl">
@@ -111,23 +143,30 @@ export default function Home() {
                 their unused items a new home.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row gap-4">
-                <Link
+                <Button
+                  as={Link}
                   href="/browse"
-                  className="rounded-md bg-background px-6 py-3 text-base font-medium text-indigo-700 dark:text-indigo-300 shadow-sm hover:bg-indigo-50 dark:hover:bg-indigo-950"
+                  size="lg"
+                  color="secondary"
+                  className="text-white"
+                  variant="faded"
                 >
                   Browse Items
-                </Link>
-                <Link
+                </Button>
+                <Button
+                  as={Link}
                   href="/sell"
-                  className="rounded-md bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-500 dark:hover:bg-indigo-700"
+                  color="secondary"
+                  size="lg"
+                  variant="shadow"
                 >
                   Sell Something
-                </Link>
+                </Button>
               </div>
             </div>
           </div>
         </div>
-        <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-indigo-900 to-indigo-800 dark:from-indigo-950 dark:to-indigo-900 hidden lg:block" />
+        {/* <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-indigo-900 to-indigo-800 dark:from-indigo-950 dark:to-indigo-900 hidden lg:block" /> */}
       </div>
 
       {/* Categories Section */}
@@ -143,7 +182,9 @@ export default function Home() {
                 href={`/category/${category.name.toLowerCase()}`}
                 className={`${category.color} rounded-xl p-6 flex flex-col items-center justify-center transition-transform hover:scale-105`}
               >
-                <span className="text-4xl mb-2">{category.icon}</span>
+                <span className={`text-4xl mb-2 ${category.iconColor}`}>
+                  {<category.icon />}
+                </span>
                 <span className="font-medium text-foreground">
                   {category.name}
                 </span>
@@ -239,16 +280,19 @@ export default function Home() {
             Join hundreds of Ashoka students who are decluttering their space
             and making extra cash.
           </p>
-          <Link
-            href="/signup"
-            className="inline-block rounded-md bg-background px-8 py-3 text-base font-medium text-indigo-700 dark:text-indigo-400 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-900"
+          <Button
+            as={Link}
+            href="/login"
+            className="bg-background px-8 py-3 text-base font-medium text-indigo-700 dark:text-indigo-400 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-900"
+            size="lg"
+            startContent={
+              <Image src="/images/google.png" alt="Google logo" width="20" height="20"/>
+            }
           >
             Get Started Today
-          </Link>
+          </Button>
         </div>
       </section>
-
-      <Footer />
     </main>
   );
 }

@@ -10,6 +10,16 @@ module.exports = {
     "./node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
+    // colors: {
+    //   light:{
+    //     background: "#ffffff",
+    //     foreground: "#171717",
+    //   },
+    //   dark: {
+    //     background: "#000000",
+    //     foreground: "#ededed",
+    //   }
+    // },
     extend: {},
   },
   darkMode: "class",
@@ -19,14 +29,14 @@ module.exports = {
         light: {
           colors: {
             secondary: {
-              DEFAULT: "#4f46e5",
+              DEFAULT: "#4338ca",
             },
           },
         },
         dark: {
           colors: {
             secondary: {
-              DEFAULT: "#4f46e5",
+              DEFAULT: "#312e81",
             },
           },
         },
