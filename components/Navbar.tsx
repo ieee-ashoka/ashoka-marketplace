@@ -91,9 +91,8 @@ export default function AppNavbar() {
           <NavbarItem key={item.name} isActive={pathname === item.href}>
             <Link
               href={item.href}
-              className={`dark:text-gray-300 text-gray-600 hover:text-indigo-600 ${
-                pathname === item.href ? "text-indigo-600" : ""
-              }`}
+              className={`dark:text-gray-300 text-gray-600 hover:text-indigo-600 ${pathname === item.href ? "text-indigo-600" : ""
+                }`}
             >
               {item.name}
             </Link>
@@ -127,8 +126,8 @@ export default function AppNavbar() {
                   fallback={<UserIcon className="h-5 w-5 text-indigo-600" />}
                 />
               </DropdownTrigger>
-              <DropdownMenu aria-label="User menu">
-                <DropdownItem key="profile" className="text-gray-700 dark:" as={Link} href="/profile">
+              <DropdownMenu aria-label="User menu" className="text-gray-600 dark:text-gray-300">
+                <DropdownItem key="profile" as={Link} href="/profile">
                   My Profile
                 </DropdownItem>
                 <DropdownItem key="my-listings" as={Link} href="/my-listings">

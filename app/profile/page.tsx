@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Key } from "react";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -93,7 +93,7 @@ export default function ProfilePage() {
 
         // Extract actual listing data from wishlist join
         const wishlistItems = wishlistData
-          .map((item: { listings: Listing }) => item.listings)
+          .map((item: { listings: Listing[] }) => item.listings[0])
           .filter(Boolean); // Filter out any null items
 
         setProfile(profileData);
@@ -130,27 +130,27 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="flex flex-col gap-6">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
+        <div className="flex flex-col gap-4 sm:gap-6">
           <Card className="w-full">
-            <CardBody className="flex flex-col sm:flex-row gap-6 p-6">
-              <Skeleton className="rounded-full w-24 h-24 sm:w-32 sm:h-32" />
-              <div className="flex flex-col flex-grow gap-4">
-                <Skeleton className="h-8 w-48 rounded-lg" />
-                <Skeleton className="h-4 w-full rounded-lg" />
-                <div className="flex gap-4">
-                  <Skeleton className="h-8 w-20 rounded-lg" />
-                  <Skeleton className="h-8 w-20 rounded-lg" />
+            <CardBody className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6">
+              <Skeleton className="rounded-full w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 mx-auto sm:mx-0" />
+              <div className="flex flex-col flex-grow gap-3 sm:gap-4">
+                <Skeleton className="h-6 sm:h-8 w-32 sm:w-48 rounded-lg mx-auto sm:mx-0" />
+                <Skeleton className="h-3 sm:h-4 w-full rounded-lg" />
+                <div className="flex gap-3 sm:gap-4 justify-center sm:justify-start">
+                  <Skeleton className="h-6 sm:h-8 w-16 sm:w-20 rounded-lg" />
+                  <Skeleton className="h-6 sm:h-8 w-16 sm:w-20 rounded-lg" />
                 </div>
               </div>
             </CardBody>
           </Card>
 
-          <Skeleton className="h-12 w-full rounded-lg" />
+          <Skeleton className="h-10 sm:h-12 w-full rounded-lg" />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-64 rounded-xl" />
+              <Skeleton key={i} className="h-40 sm:h-64 rounded-xl" />
             ))}
           </div>
         </div>
@@ -160,13 +160,13 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <h2 className="text-2xl font-bold mb-4">Profile Not Found</h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-8">
+      <div className="container mx-auto px-2 sm:px-4 py-8 sm:py-16 text-center">
+        <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Profile Not Found</h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6 sm:mb-8">
           We couldn&apos;t find your profile information. Please try again or
           contact support.
         </p>
-        <Button as={Link} href="/" color="primary">
+        <Button as={Link} href="/" color="primary" size="sm" className="sm:text-base">
           Return to Home
         </Button>
       </div>
@@ -179,32 +179,32 @@ export default function ProfilePage() {
   const reputationScore = 4.8; // You would calculate this from reviews
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="container bg-background mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
       {/* Profile Header Card */}
-      <Card className="mb-8">
-        <CardHeader className="flex flex-col sm:flex-row gap-6 p-6">
+      <Card className="mb-4 sm:mb-8">
+        <CardHeader className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6">
           <Avatar
             src={profile.avatar || "https://i.pravatar.cc/300"}
             name={profile.name || "User"}
-            className="w-24 h-24 sm:w-32 sm:h-32 text-large"
+            className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 text-large mx-auto sm:mx-0"
             size="lg"
             color="primary"
             isBordered
             showFallback
           />
 
-          <div className="flex flex-col flex-grow">
+          <div className="flex flex-col flex-grow text-center sm:text-left">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between mb-2">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
                   {profile.name || "Ashoka User"}
                 </h1>
-                <p className="text-gray-500 dark:text-gray-400">
+                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
                   {profile.email}
                 </p>
               </div>
 
-              <div className="flex gap-2 mt-2 sm:mt-0">
+              <div className="flex gap-2 mt-2 sm:mt-0 justify-center sm:justify-start">
                 <Tooltip content="Edit Profile">
                   <Button
                     isIconOnly
@@ -214,7 +214,7 @@ export default function ProfilePage() {
                     className="text-default-500"
                     size="sm"
                   >
-                    <Edit size={18} />
+                    <Edit size={16} />
                   </Button>
                 </Tooltip>
 
@@ -227,7 +227,7 @@ export default function ProfilePage() {
                     className="text-default-500"
                     size="sm"
                   >
-                    <Settings size={18} />
+                    <Settings size={16} />
                   </Button>
                 </Tooltip>
 
@@ -238,52 +238,52 @@ export default function ProfilePage() {
                     className="text-default-500"
                     size="sm"
                   >
-                    <Share2 size={18} />
+                    <Share2 size={16} />
                   </Button>
                 </Tooltip>
               </div>
             </div>
 
             {profile.phn_no && (
-              <p className="text-gray-700 dark:text-gray-300 mb-4">
+              <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 mb-3 sm:mb-4">
                 Contact: {profile.phn_no}
               </p>
             )}
 
-            <div className="flex flex-wrap gap-6 mt-2">
+            <div className="flex flex-wrap justify-center sm:justify-start gap-4 sm:gap-6 mt-2">
               <div className="flex flex-col items-center sm:items-start">
-                <span className="text-lg font-semibold">
+                <span className="text-base sm:text-lg font-semibold">
                   {myListings.length}
                 </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                   Listings
                 </span>
               </div>
 
               <div className="flex flex-col items-center sm:items-start">
-                <span className="text-lg font-semibold">
+                <span className="text-base sm:text-lg font-semibold">
                   {transactionsCompleted}
                 </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                   Sold
                 </span>
               </div>
 
               <div className="flex flex-col items-center sm:items-start">
-                <span className="text-lg font-semibold">{wishlist.length}</span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-base sm:text-lg font-semibold">{wishlist.length}</span>
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                   Wishlist
                 </span>
               </div>
 
               <div className="flex flex-col items-center sm:items-start">
                 <div className="flex items-center">
-                  <span className="text-lg font-semibold">
+                  <span className="text-base sm:text-lg font-semibold">
                     {reputationScore}
                   </span>
                   <span className="text-yellow-500 ml-1">★</span>
                 </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
+                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                   Rating
                 </span>
               </div>
@@ -291,27 +291,27 @@ export default function ProfilePage() {
           </div>
         </CardHeader>
 
-        <CardFooter className="py-3 px-6 text-sm text-gray-500 dark:text-gray-400 border-t border-default-200">
+        <CardFooter className="py-2 sm:py-3 px-4 sm:px-6 text-xs sm:text-sm text-gray-500 dark:text-gray-400 border-t border-default-200">
           <p>Member since {formatDate(profile.created_at)}</p>
         </CardFooter>
       </Card>
 
       {/* Tabs for Listings and Wishlist */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <Tabs
           selectedKey={activeTab}
-          onSelectionChange={(key: string) => setActiveTab(key)}
+          onSelectionChange={(key: Key) => setActiveTab(key.toString())}
           variant="underlined"
-          size="lg"
+          size="md"
           className="w-full"
         >
           <Tab
             key="listings"
             title={
-              <div className="flex items-center gap-2">
-                <Package size={18} />
+              <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-base">
+                <Package size={16} className="hidden sm:block" />
                 <span>My Listings</span>
-                <Chip size="sm" variant="flat">
+                <Chip size="sm" variant="flat" className="text-xs">
                   {myListings.length}
                 </Chip>
               </div>
@@ -320,10 +320,10 @@ export default function ProfilePage() {
           <Tab
             key="wishlist"
             title={
-              <div className="flex items-center gap-2">
-                <Heart size={18} />
+              <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-base">
+                <Heart size={16} className="hidden sm:block" />
                 <span>Wishlist</span>
-                <Chip size="sm" variant="flat">
+                <Chip size="sm" variant="flat" className="text-xs">
                   {wishlist.length}
                 </Chip>
               </div>
@@ -332,9 +332,9 @@ export default function ProfilePage() {
           <Tab
             key="transactions"
             title={
-              <div className="flex items-center gap-2">
-                <ShoppingBag size={18} />
-                <span>Purchase History</span>
+              <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-base">
+                <ShoppingBag size={16} className="hidden sm:block" />
+                <span>Purchases</span>
               </div>
             }
           />
@@ -342,32 +342,33 @@ export default function ProfilePage() {
       </div>
 
       {/* Tab Content */}
-      <div className="mb-10">
+      <div className="mb-6 sm:mb-10">
         {activeTab === "listings" && (
           <>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">My Listings</h2>
-              <Button as={Link} href="/sell" color="primary" variant="flat">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-2 sm:gap-0">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground">My Listings</h2>
+              <Button as={Link} href="/sell" color="primary" variant="flat" size="sm" className="w-full sm:w-auto">
                 Create New Listing
               </Button>
             </div>
 
             {myListings.length === 0 ? (
-              <div className="text-center py-16 bg-default-50 rounded-xl">
-                <div className="mb-4">
-                  <Package size={48} className="mx-auto text-gray-400" />
+              <div className="text-center py-8 sm:py-16 bg-default-50 rounded-xl px-3 sm:px-6">
+                <div className="mb-3 sm:mb-4">
+                  <Package size={36} className="mx-auto text-gray-400 sm:hidden" />
+                  <Package size={48} className="mx-auto text-gray-400 hidden sm:block" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">No Listings Yet</h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">No Listings Yet</h3>
+                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-4 sm:mb-6 max-w-md mx-auto">
                   You haven&apos;t created any listings yet. Start selling your
                   unused items to Ashoka students today!
                 </p>
-                <Button as={Link} href="/sell" color="primary">
+                <Button as={Link} href="/sell" color="primary" size="sm" className="sm:text-base">
                   Create Your First Listing
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {myListings.map((listing) => {
                   const status = getListingStatus(listing);
 
@@ -388,36 +389,37 @@ export default function ProfilePage() {
                           <Chip
                             size="sm"
                             color={status === "expired" ? "danger" : "primary"}
-                            className="absolute top-2 right-2"
+                            className="absolute top-2 right-2 text-xs"
                           >
                             {status === "expired" ? "Expired" : "Active"}
                           </Chip>
                         </div>
-                        <div className="p-3">
-                          <h3 className="font-medium text-lg truncate">
+                        <div className="p-2 sm:p-3">
+                          <h3 className="font-medium text-base sm:text-lg truncate">
                             {listing.name || "Unnamed Item"}
                           </h3>
                           <div className="flex justify-between items-center mt-1">
-                            <span className="text-lg font-bold">
+                            <span className="text-base sm:text-lg font-bold">
                               {listing.price ? `₹${listing.price}` : "Free"}
                             </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                            <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                               {formatDate(listing.created_at)}
                             </span>
                           </div>
                           {listing.category && (
-                            <Chip size="sm" variant="flat" className="mt-2">
+                            <Chip size="sm" variant="flat" className="mt-2 text-xs">
                               {listing.category}
                             </Chip>
                           )}
                         </div>
                       </CardBody>
-                      <CardFooter className="flex gap-2 justify-end border-t border-default-100">
+                      <CardFooter className="flex gap-1 sm:gap-2 justify-end border-t border-default-100 p-2 sm:p-3">
                         <Button
                           size="sm"
                           variant="light"
                           as={Link}
                           href={`/listings/${listing.id}/edit`}
+                          className="min-w-0 px-2 sm:px-3"
                         >
                           Edit
                         </Button>
@@ -427,6 +429,7 @@ export default function ProfilePage() {
                           variant="flat"
                           as={Link}
                           href={`/listings/${listing.id}`}
+                          className="min-w-0 px-2 sm:px-3"
                         >
                           View
                         </Button>
@@ -441,31 +444,32 @@ export default function ProfilePage() {
 
         {activeTab === "wishlist" && (
           <>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">My Wishlist</h2>
-              <Button as={Link} href="/browse" color="primary" variant="flat">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-2 sm:gap-0">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground">My Wishlist</h2>
+              <Button as={Link} href="/browse" color="primary" variant="flat" size="sm" className="w-full sm:w-auto">
                 Browse More Items
               </Button>
             </div>
 
             {wishlist.length === 0 ? (
-              <div className="text-center py-16 bg-default-50 rounded-xl">
-                <div className="mb-4">
-                  <Heart size={48} className="mx-auto text-gray-400" />
+              <div className="text-center py-8 sm:py-16 bg-default-50 rounded-xl px-3 sm:px-6">
+                <div className="mb-3 sm:mb-4">
+                  <Heart size={36} className="mx-auto text-gray-400 sm:hidden" />
+                  <Heart size={48} className="mx-auto text-gray-400 hidden sm:block" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">
                   Your Wishlist is Empty
                 </h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-4 sm:mb-6 max-w-md mx-auto">
                   Add items to your wishlist to save them for later and get
                   notified about price changes.
                 </p>
-                <Button as={Link} href="/browse" color="primary">
+                <Button as={Link} href="/browse" color="primary" size="sm" className="sm:text-base">
                   Browse Items
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {wishlist.map((listing) => (
                   <Card
                     key={listing.id}
@@ -477,28 +481,29 @@ export default function ProfilePage() {
                         alt={listing.name || "Product"}
                         className="w-full aspect-square object-cover"
                       />
-                      <div className="p-3">
-                        <h3 className="font-medium text-lg truncate">
+                      <div className="p-2 sm:p-3">
+                        <h3 className="font-medium text-base sm:text-lg truncate">
                           {listing.name || "Unnamed Item"}
                         </h3>
                         <div className="flex justify-between items-center mt-1">
-                          <span className="text-lg font-bold">
+                          <span className="text-base sm:text-lg font-bold">
                             {listing.price ? `₹${listing.price}` : "Free"}
                           </span>
                         </div>
                         {listing.category && (
-                          <Chip size="sm" variant="flat" className="mt-2">
+                          <Chip size="sm" variant="flat" className="mt-2 text-xs">
                             {listing.category}
                           </Chip>
                         )}
                       </div>
                     </CardBody>
-                    <CardFooter className="flex gap-2 justify-end border-t border-default-100">
+                    <CardFooter className="flex gap-1 sm:gap-2 justify-end border-t border-default-100 p-2 sm:p-3">
                       <Button
                         size="sm"
                         color="danger"
                         variant="flat"
-                        onClick={async () => {
+                        className="min-w-0 px-2 sm:px-3"
+                        onPress={async () => {
                           // Remove from wishlist functionality
                           try {
                             const {
@@ -532,6 +537,7 @@ export default function ProfilePage() {
                         variant="flat"
                         as={Link}
                         href={`/listings/${listing.id}`}
+                        className="min-w-0 px-2 sm:px-3"
                       >
                         View
                       </Button>
@@ -544,15 +550,16 @@ export default function ProfilePage() {
         )}
 
         {activeTab === "transactions" && (
-          <div className="text-center py-16 bg-default-50 rounded-xl">
-            <div className="mb-4">
-              <ShoppingBag size={48} className="mx-auto text-gray-400" />
+          <div className="text-center py-8 sm:py-16 bg-default-50 rounded-xl px-3 sm:px-6">
+            <div className="mb-3 sm:mb-4">
+              <ShoppingBag size={36} className="mx-auto text-gray-400 sm:hidden" />
+              <ShoppingBag size={48} className="mx-auto text-gray-400 hidden sm:block" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Purchase History</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+            <h3 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">Purchase History</h3>
+            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-4 sm:mb-6 max-w-md mx-auto">
               Track all your purchases and completed transactions in one place.
             </p>
-            <Button as={Link} href="/browse" color="primary">
+            <Button as={Link} href="/browse" color="primary" size="sm" className="sm:text-base">
               Browse Items
             </Button>
           </div>

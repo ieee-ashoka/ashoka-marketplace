@@ -16,7 +16,7 @@ import ProductCard from "../components/ProductCard";
 import { subDays } from "date-fns";
 import { Tables } from "@/types/database.types";
 import { Button } from "@heroui/react";
-import Image from "next/image";
+// import Image from "next/image";
 
 export default function Home() {
   const categories = [
@@ -269,14 +269,14 @@ export default function Home() {
           </p>
           <Button
             as={Link}
-            href="/login"
+            href="/browse"
             className="bg-background px-8 py-3 text-base font-medium text-indigo-700 dark:text-indigo-400 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-900"
             size="lg"
-            startContent={
-              <Image src="/images/google.png" alt="Google logo" width="20" height="20" />
-            }
+            // startContent={
+            //   <Image src="/images/google.png" alt="Google logo" width="20" height="20" />
+            // }
           >
-            Get Started Today
+            Browse New Items
           </Button>
         </div>
       </section>
