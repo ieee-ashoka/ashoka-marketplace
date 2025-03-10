@@ -59,35 +59,28 @@ export default function Home() {
   ];
 
   // Transform the featuredListings data to match the product schema
-  const featuredListings: Tables<"products">[] = [
+  const featuredListings: Tables<"listings">[] = [
     {
       id: 1,
       name: "Economics Textbook",
       price: null,
       image: ["/images/placeholder-books.jpg"],
-      username: "Priya M.",
       created_at: subDays(new Date(), 2).toISOString(),
       category: "Textbooks",
       condition: "Like New",
       description: null,
-      email: null,
       expired_at: null,
-      phn_no: null,
       user_id: null,
     },
     {
       id: 2,
       name: "Desk Lamp",
       price: 600,
-      image: null,
-      username: null,
-      created_at: subDays(new Date(), 5).toISOString(),
+      image: null, created_at: subDays(new Date(), 5).toISOString(),
       category: "Decor",
       condition: "Good",
       description: null,
-      email: null,
       expired_at: null,
-      phn_no: null,
       user_id: null,
     },
     {
@@ -95,14 +88,11 @@ export default function Home() {
       name: "Portable Speaker",
       price: 1200,
       image: ["/placeholder-speaker.jpg"],
-      username: "Zara T.",
       created_at: subDays(new Date(), 1).toISOString(),
       category: "Electronics",
       condition: "Excellent",
       description: "High quality portable speaker with great bass response",
-      email: null,
       expired_at: null,
-      phn_no: null,
       user_id: null,
     },
     {
@@ -110,15 +100,12 @@ export default function Home() {
       name: "Room Bookshelf",
       price: 1500,
       image: ["/placeholder-shelf.jpg"],
-      username: "Rohan D.",
       created_at: subDays(new Date(), 3).toISOString(),
       category: "Furniture",
       condition: null,
       description:
         "Sturdy wooden bookshelf, perfect for dorm rooms. Holds up to 50 books.",
-      email: null,
       expired_at: null,
-      phn_no: null,
       user_id: null,
     },
   ];
@@ -286,7 +273,7 @@ export default function Home() {
             className="bg-background px-8 py-3 text-base font-medium text-indigo-700 dark:text-indigo-400 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-900"
             size="lg"
             startContent={
-              <Image src="/images/google.png" alt="Google logo" width="20" height="20"/>
+              <Image src="/images/google.png" alt="Google logo" width="20" height="20" />
             }
           >
             Get Started Today

@@ -7,7 +7,7 @@ import { Tables } from "@/types/database.types";
 import { formatDistanceToNow } from "date-fns";
 
 type ProductCardProps = React.HTMLAttributes<HTMLDivElement> & {
-  product: Tables<"products">;
+  product: Tables<"listings">;
 };
 
 export default function ProductCard({ product, className }: ProductCardProps) {
@@ -89,9 +89,9 @@ export default function ProductCard({ product, className }: ProductCardProps) {
         )}
 
         <div className="mt-2 sm:mt-3 flex items-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-          <span className="truncate max-w-[120px]">
+          {/* <span className="truncate max-w-[120px]">
             {product.username || "Anonymous"}
-          </span>
+          </span> */}
           <span className="mx-1">•</span>
           <span>{postedDate || "Recently"}</span>
         </div>
