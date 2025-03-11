@@ -130,9 +130,9 @@ export default function AppNavbar() {
                 <DropdownItem key="profile" as={Link} href="/profile">
                   My Profile
                 </DropdownItem>
-                <DropdownItem key="my-listings" as={Link} href="/my-listings">
+                {/* <DropdownItem key="my-listings" as={Link} href="/my-listings">
                   My Listings
-                </DropdownItem>
+                </DropdownItem> */}
                 <DropdownItem key="settings" as={Link} href="/settings">
                   Settings
                 </DropdownItem>

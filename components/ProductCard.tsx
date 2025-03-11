@@ -7,10 +7,13 @@ import { Tables } from "@/types/database.types";
 import { formatDistanceToNow } from "date-fns";
 
 type ProductCardProps = React.HTMLAttributes<HTMLDivElement> & {
+  isActive?: boolean;
+  showActive?: boolean;
   product: Tables<"listings">;
+  actions?: React.ReactNode; // New prop for custom actions
 };
 
-export default function ProductCard({ product, className }: ProductCardProps) {
+export default function ProductCard({ isActive, showActive, product, className, actions }: ProductCardProps) {
   // Format the price with proper currency symbol
   const formattedPrice = product.price
     ? `₹${product.price.toLocaleString("en-IN")}`
@@ -33,7 +36,6 @@ export default function ProductCard({ product, className }: ProductCardProps) {
   return (
     <Card
       className={`shadow overflow-hidden hover:shadow-md transition-all duration-300 h-full ${className}`}
-      isPressable
     >
       {/* Fixed height image container with strict aspect ratio */}
       <div className="relative w-full h-48 overflow-hidden">
@@ -54,6 +56,16 @@ export default function ProductCard({ product, className }: ProductCardProps) {
             size="md"
           >
             {product.condition}
+          </Chip>
+        )}
+        {showActive && (
+          <Chip
+            className="absolute top-2 right-2 text-xs sm:text-sm"
+            color={isActive ? "primary" : "danger"}
+            variant="shadow"
+            size="md"
+          >
+            {isActive ? "Active" : "Expired"}
           </Chip>
         )}
       </div>
@@ -92,7 +104,7 @@ export default function ProductCard({ product, className }: ProductCardProps) {
           {/* <span className="truncate max-w-[120px]">
             {product.username || "Anonymous"}
           </span> */}
-          <span className="mx-1">•</span>
+          {/* <span className="mx-1">•</span> */}
           <span>{postedDate || "Recently"}</span>
         </div>
 
@@ -111,15 +123,19 @@ export default function ProductCard({ product, className }: ProductCardProps) {
       </CardBody>
 
       <CardFooter className="px-3 pb-3 pt-0 sm:px-4 sm:pb-4">
-        <Button
-          as={Link}
-          href={`/item/${product.id}`}
-          className="w-full min-h-[36px] text-sm sm:text-base"
-          color="secondary"
-          variant="flat"
-        >
-          View Details
-        </Button>
+        {actions ? (
+          actions
+        ) : (
+          <Button
+            as={Link}
+            href={`/item/${product.id}`}
+            className="w-full min-h-[36px] text-sm sm:text-base"
+            color="secondary"
+            variant="flat"
+          >
+            View Details
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

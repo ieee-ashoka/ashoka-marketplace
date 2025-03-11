@@ -5,28 +5,20 @@ import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Avatar,
   Button,
-  Card,
-  CardBody,
-  CardFooter,
-  CardHeader,
   Chip,
-  Image,
-  Skeleton,
   Tab,
   Tabs,
-  Tooltip,
 } from "@heroui/react";
 import {
-  Edit,
   Heart,
   Package,
-  Settings,
-  Share2,
   ShoppingBag,
 } from "lucide-react";
 import { Database } from "@/types/database.types";
+import ProductCard from "@/components/ProductCard";
+import ProfileSkeleton from "@/components/loading/profile";
+import ProfileCard from "@/components/ProfileCard";
 
 // Use types from the database schema
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -76,29 +68,34 @@ export default function ProfilePage() {
 
         if (listingsError) throw listingsError;
 
-        // Fetch user's wishlist with joined listing data
-        const { data: wishlistData, error: wishlistError } = await supabase
+        // First fetch wishlist entries to get listing_ids
+        const { data: wishlistEntries, error: wishlistError } = await supabase
           .from("wishlist")
-          .select(
-            `
-            id, 
-            created_at,
-            listing_id,
-            listings(*)
-          `
-          )
+          .select("listing_id")
           .eq("user_id", user.id);
 
         if (wishlistError) throw wishlistError;
 
-        // Extract actual listing data from wishlist join
-        const wishlistItems = wishlistData
-          .map((item: { listings: Listing[] }) => item.listings[0])
-          .filter(Boolean); // Filter out any null items
+        // No wishlist items case
+        if (!wishlistEntries || wishlistEntries.length === 0) {
+          setWishlist([]);
+        } else {
+          // Extract listing_ids from wishlist entries
+          const listingIds = wishlistEntries.map(item => item.listing_id);
+
+          // Fetch the actual listing data for items in wishlist
+          const { data: wishlistListings, error: wishlistListingsError } = await supabase
+            .from("listings")
+            .select("*")
+            .in("id", listingIds);
+
+          if (wishlistListingsError) throw wishlistListingsError;
+
+          setWishlist(wishlistListings || []);
+        }
 
         setProfile(profileData);
         setMyListings(listingsData || []);
-        setWishlist(wishlistItems || []);
       } catch (error) {
         console.error("Error fetching profile data:", error);
       } finally {
@@ -119,42 +116,9 @@ export default function ProfilePage() {
     return now > expiredAt ? "expired" : "active";
   };
 
-  // Function to format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
   if (isLoading) {
     return (
-      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
-        <div className="flex flex-col gap-4 sm:gap-6">
-          <Card className="w-full">
-            <CardBody className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6">
-              <Skeleton className="rounded-full w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 mx-auto sm:mx-0" />
-              <div className="flex flex-col flex-grow gap-3 sm:gap-4">
-                <Skeleton className="h-6 sm:h-8 w-32 sm:w-48 rounded-lg mx-auto sm:mx-0" />
-                <Skeleton className="h-3 sm:h-4 w-full rounded-lg" />
-                <div className="flex gap-3 sm:gap-4 justify-center sm:justify-start">
-                  <Skeleton className="h-6 sm:h-8 w-16 sm:w-20 rounded-lg" />
-                  <Skeleton className="h-6 sm:h-8 w-16 sm:w-20 rounded-lg" />
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
-          <Skeleton className="h-10 sm:h-12 w-full rounded-lg" />
-
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-40 sm:h-64 rounded-xl" />
-            ))}
-          </div>
-        </div>
-      </div>
+      <ProfileSkeleton />
     );
   }
 
@@ -181,120 +145,14 @@ export default function ProfilePage() {
   return (
     <div className="container bg-background mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
       {/* Profile Header Card */}
-      <Card className="mb-4 sm:mb-8">
-        <CardHeader className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6">
-          <Avatar
-            src={profile.avatar || "https://i.pravatar.cc/300"}
-            name={profile.name || "User"}
-            className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 text-large mx-auto sm:mx-0"
-            size="lg"
-            color="primary"
-            isBordered
-            showFallback
-          />
-
-          <div className="flex flex-col flex-grow text-center sm:text-left">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between mb-2">
-              <div>
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
-                  {profile.name || "Ashoka User"}
-                </h1>
-                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-                  {profile.email}
-                </p>
-              </div>
-
-              <div className="flex gap-2 mt-2 sm:mt-0 justify-center sm:justify-start">
-                <Tooltip content="Edit Profile">
-                  <Button
-                    isIconOnly
-                    as={Link}
-                    href="/profile/edit"
-                    variant="flat"
-                    className="text-default-500"
-                    size="sm"
-                  >
-                    <Edit size={16} />
-                  </Button>
-                </Tooltip>
-
-                <Tooltip content="Settings">
-                  <Button
-                    isIconOnly
-                    as={Link}
-                    href="/profile/settings"
-                    variant="flat"
-                    className="text-default-500"
-                    size="sm"
-                  >
-                    <Settings size={16} />
-                  </Button>
-                </Tooltip>
-
-                <Tooltip content="Share Profile">
-                  <Button
-                    isIconOnly
-                    variant="flat"
-                    className="text-default-500"
-                    size="sm"
-                  >
-                    <Share2 size={16} />
-                  </Button>
-                </Tooltip>
-              </div>
-            </div>
-
-            {profile.phn_no && (
-              <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 mb-3 sm:mb-4">
-                Contact: {profile.phn_no}
-              </p>
-            )}
-
-            <div className="flex flex-wrap justify-center sm:justify-start gap-4 sm:gap-6 mt-2">
-              <div className="flex flex-col items-center sm:items-start">
-                <span className="text-base sm:text-lg font-semibold">
-                  {myListings.length}
-                </span>
-                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                  Listings
-                </span>
-              </div>
-
-              <div className="flex flex-col items-center sm:items-start">
-                <span className="text-base sm:text-lg font-semibold">
-                  {transactionsCompleted}
-                </span>
-                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                  Sold
-                </span>
-              </div>
-
-              <div className="flex flex-col items-center sm:items-start">
-                <span className="text-base sm:text-lg font-semibold">{wishlist.length}</span>
-                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                  Wishlist
-                </span>
-              </div>
-
-              <div className="flex flex-col items-center sm:items-start">
-                <div className="flex items-center">
-                  <span className="text-base sm:text-lg font-semibold">
-                    {reputationScore}
-                  </span>
-                  <span className="text-yellow-500 ml-1">★</span>
-                </div>
-                <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                  Rating
-                </span>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardFooter className="py-2 sm:py-3 px-4 sm:px-6 text-xs sm:text-sm text-gray-500 dark:text-gray-400 border-t border-default-200">
-          <p>Member since {formatDate(profile.created_at)}</p>
-        </CardFooter>
-      </Card>
+      <ProfileCard
+        profile={profile}
+        viewOnly={false}
+        listingsCount={myListings.length}
+        transactionsCount={transactionsCompleted}
+        wishlistCount={wishlist.length}
+        reputationScore={reputationScore}
+      />
 
       {/* Tabs for Listings and Wishlist */}
       <div className="mb-4 sm:mb-6">
@@ -371,70 +229,38 @@ export default function ProfilePage() {
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {myListings.map((listing) => {
                   const status = getListingStatus(listing);
+                  const isActive = status === "active";
 
                   return (
-                    <Card
+                    <ProductCard
                       key={listing.id}
-                      className="hover:shadow-md transition-shadow"
-                    >
-                      <CardBody className="p-0">
-                        <div className="relative">
-                          <Image
-                            src={
-                              listing.image?.[0] || "/placeholder-product.jpg"
-                            }
-                            alt={listing.name || "Product"}
-                            className="w-full aspect-square object-cover"
-                          />
-                          <Chip
+                      product={listing}
+                      showActive={true}
+                      isActive={isActive}
+                      actions={
+                        <div className="flex gap-1 sm:gap-2 justify-end w-full">
+                          <Button
                             size="sm"
-                            color={status === "expired" ? "danger" : "primary"}
-                            className="absolute top-2 right-2 text-xs"
+                            variant="light"
+                            as={Link}
+                            href={`/listings/${listing.id}/edit`}
+                            className="min-w-0 px-2 sm:px-3"
                           >
-                            {status === "expired" ? "Expired" : "Active"}
-                          </Chip>
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            color="primary"
+                            variant="flat"
+                            as={Link}
+                            href={`/listings/${listing.id}`}
+                            className="min-w-0 px-2 sm:px-3"
+                          >
+                            View
+                          </Button>
                         </div>
-                        <div className="p-2 sm:p-3">
-                          <h3 className="font-medium text-base sm:text-lg truncate">
-                            {listing.name || "Unnamed Item"}
-                          </h3>
-                          <div className="flex justify-between items-center mt-1">
-                            <span className="text-base sm:text-lg font-bold">
-                              {listing.price ? `₹${listing.price}` : "Free"}
-                            </span>
-                            <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-                              {formatDate(listing.created_at)}
-                            </span>
-                          </div>
-                          {listing.category && (
-                            <Chip size="sm" variant="flat" className="mt-2 text-xs">
-                              {listing.category}
-                            </Chip>
-                          )}
-                        </div>
-                      </CardBody>
-                      <CardFooter className="flex gap-1 sm:gap-2 justify-end border-t border-default-100 p-2 sm:p-3">
-                        <Button
-                          size="sm"
-                          variant="light"
-                          as={Link}
-                          href={`/listings/${listing.id}/edit`}
-                          className="min-w-0 px-2 sm:px-3"
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          color="primary"
-                          variant="flat"
-                          as={Link}
-                          href={`/listings/${listing.id}`}
-                          className="min-w-0 px-2 sm:px-3"
-                        >
-                          View
-                        </Button>
-                      </CardFooter>
-                    </Card>
+                      }
+                    />
                   );
                 })}
               </div>
@@ -471,78 +297,57 @@ export default function ProfilePage() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {wishlist.map((listing) => (
-                  <Card
+                  <ProductCard
                     key={listing.id}
-                    className="hover:shadow-md transition-shadow"
-                  >
-                    <CardBody className="p-0">
-                      <Image
-                        src={listing.image?.[0] || "/placeholder-product.jpg"}
-                        alt={listing.name || "Product"}
-                        className="w-full aspect-square object-cover"
-                      />
-                      <div className="p-2 sm:p-3">
-                        <h3 className="font-medium text-base sm:text-lg truncate">
-                          {listing.name || "Unnamed Item"}
-                        </h3>
-                        <div className="flex justify-between items-center mt-1">
-                          <span className="text-base sm:text-lg font-bold">
-                            {listing.price ? `₹${listing.price}` : "Free"}
-                          </span>
-                        </div>
-                        {listing.category && (
-                          <Chip size="sm" variant="flat" className="mt-2 text-xs">
-                            {listing.category}
-                          </Chip>
-                        )}
+                    product={listing}
+                    actions={
+                      <div className="flex gap-1 sm:gap-2 justify-end w-full">
+                        <Button
+                          size="sm"
+                          color="danger"
+                          variant="flat"
+                          className="min-w-0 px-2 sm:px-3"
+                          onPress={async () => {
+                            // Remove from wishlist functionality
+                            try {
+                              const {
+                                data: { user },
+                              } = await supabase.auth.getUser();
+                              if (!user) return;
+
+                              await supabase
+                                .from("wishlist")
+                                .delete()
+                                .eq("user_id", user.id)
+                                .eq("listing_id", listing.id);
+
+                              // Update wishlist state
+                              setWishlist(
+                                wishlist.filter((item) => item.id !== listing.id)
+                              );
+                            } catch (error) {
+                              console.error(
+                                "Error removing from wishlist:",
+                                error
+                              );
+                            }
+                          }}
+                        >
+                          Remove
+                        </Button>
+                        <Button
+                          size="sm"
+                          color="primary"
+                          variant="flat"
+                          as={Link}
+                          href={`/listings/${listing.id}`}
+                          className="min-w-0 px-2 sm:px-3"
+                        >
+                          View
+                        </Button>
                       </div>
-                    </CardBody>
-                    <CardFooter className="flex gap-1 sm:gap-2 justify-end border-t border-default-100 p-2 sm:p-3">
-                      <Button
-                        size="sm"
-                        color="danger"
-                        variant="flat"
-                        className="min-w-0 px-2 sm:px-3"
-                        onPress={async () => {
-                          // Remove from wishlist functionality
-                          try {
-                            const {
-                              data: { user },
-                            } = await supabase.auth.getUser();
-                            if (!user) return;
-
-                            await supabase
-                              .from("wishlist")
-                              .delete()
-                              .eq("user_id", user.id)
-                              .eq("listing_id", listing.id);
-
-                            // Update wishlist state
-                            setWishlist(
-                              wishlist.filter((item) => item.id !== listing.id)
-                            );
-                          } catch (error) {
-                            console.error(
-                              "Error removing from wishlist:",
-                              error
-                            );
-                          }
-                        }}
-                      >
-                        Remove
-                      </Button>
-                      <Button
-                        size="sm"
-                        color="primary"
-                        variant="flat"
-                        as={Link}
-                        href={`/listings/${listing.id}`}
-                        className="min-w-0 px-2 sm:px-3"
-                      >
-                        View
-                      </Button>
-                    </CardFooter>
-                  </Card>
+                    }
+                  />
                 ))}
               </div>
             )}
