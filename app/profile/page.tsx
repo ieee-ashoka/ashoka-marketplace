@@ -143,7 +143,7 @@ export default function ProfilePage() {
   const reputationScore = 4.8; // You would calculate this from reviews
 
   return (
-    <div className="container bg-background mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
+    <div className="container bg-background mx-auto px-6 sm:px-4 py-6 sm:py-8 max-w-6xl">
       {/* Profile Header Card */}
       <ProfileCard
         profile={profile}
@@ -226,7 +226,7 @@ export default function ProfilePage() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {myListings.map((listing) => {
                   const status = getListingStatus(listing);
                   const isActive = status === "active";
@@ -295,7 +295,7 @@ export default function ProfilePage() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {wishlist.map((listing) => (
                   <ProductCard
                     key={listing.id}
