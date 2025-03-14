@@ -32,5 +32,20 @@
     "supabase": "^2.15.8",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2"
-  }
+  },
+  "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",
+  "main": "postcss.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ieee-ashoka-it/ashoka-marketplace.git"
+  },
+  "keywords": [
+    "market"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ieee-ashoka-it/ashoka-marketplace/issues"
+  },
+  "homepage": "https://github.com/ieee-ashoka-it/ashoka-marketplace#readme"
 }
