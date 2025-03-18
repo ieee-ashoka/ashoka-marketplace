@@ -16,6 +16,7 @@ import ProductCard from "../components/ProductCard";
 import { subDays } from "date-fns";
 import { Tables } from "@/types/database.types";
 import { Button } from "@heroui/react";
+
 // import Image from "next/image";
 
 export default function Home() {
@@ -135,7 +136,7 @@ export default function Home() {
                   href="/browse"
                   size="lg"
                   color="secondary"
-                  className="text-white"
+                  className="dark:text-white"
                   variant="faded"
                 >
                   Browse Items
