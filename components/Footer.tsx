@@ -5,12 +5,12 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="text-white py-8 hidden sm:block">
+    <footer className="text-gray-600 dark:text-white py-8 hidden sm:block">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <h3 className="text-lg font-semibold mb-4">Ashoka Marketplace</h3>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-500 text-sm">
               A platform for Ashoka University students to buy and sell
               second-hand items on campus.
             </p>
@@ -19,22 +19,22 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/" className="text-gray-400 hover:text-white">
+                <Link href="/" className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                   Home
                 </Link>
               </li>
               <li>
-                <Link href="/browse" className="text-gray-400 hover:text-white">
+                <Link href="/browse" className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                   Browse Items
                 </Link>
               </li>
               <li>
-                <Link href="/sell" className="text-gray-400 hover:text-white">
+                <Link href="/sell" className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                   Sell an Item
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="text-gray-400 hover:text-white">
+                <Link href="/faq" className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                   FAQ
                 </Link>
               </li>
@@ -44,14 +44,14 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/terms" className="text-gray-400 hover:text-white">
+                <Link href="/terms" className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                   Terms of Service
                 </Link>
               </li>
               <li>
                 <Link
                   href="/privacy"
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 >
                   Privacy Policy
                 </Link>
@@ -59,7 +59,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/guidelines"
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 >
                   Community Guidelines
                 </Link>
@@ -69,10 +69,10 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-4">Contact</h3>
             <ul className="space-y-2">
-              <li className="text-gray-400 hover:text-white">
+              <li className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                 <Link href="mailto:ieee.asb@ashoka.edu.in">ieee.asb@ashoka.edu.in</Link>
               </li>
-              <li className="text-gray-400 hover:text-white">
+              <li className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                 <Link href="https://ieee-ashoka.in/contact" target="_blank">
                   Report an Issue
                 </Link>
@@ -81,7 +81,7 @@ export default function Footer() {
                 <Link
                   href="#"
                   target="_blank"
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 >
                   <span className="sr-only">Instagram</span>
                   <svg
@@ -100,7 +100,7 @@ export default function Footer() {
                 <Link
                   href="#"
                   target="_blank"
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                 >
                   <span className="sr-only">Twitter</span>
                   <svg
@@ -116,11 +116,11 @@ export default function Footer() {
             </ul>
           </div>
         </div>
-        <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-400 text-sm">
+        <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-500 text-sm">
           © {new Date().getFullYear()} Ashoka Marketplace. All rights reserved.
           <br />
           Developed and maintained by{" "}
-          <Link href="https://ieee-ashoka.in" target="_blank" className="text-gray-300 hover:text-white">
+          <Link href="https://ieee-ashoka.in" target="_blank" className="text-gray-700 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-400">
             IEEE Ashoka Student Branch
           </Link>{" "}
         </div>
