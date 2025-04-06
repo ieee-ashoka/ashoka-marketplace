@@ -61,7 +61,7 @@ export default function AppNavbar() {
   ];
 
   return (
-    <Navbar maxWidth="xl" isBlurred className="hidden md:flex">
+    <Navbar maxWidth="xl" isBlurred className="hidden md:flex backdrop-blur-[8px]">
       <NavbarContent>
         <NavbarBrand>
           <Link href="/" className="flex items-center">

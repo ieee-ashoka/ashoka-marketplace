@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Button, Input } from "@heroui/react";
+import Image from "next/image";
 
 export default function ThemedInputPage() {
   const [ProductName, setProductName] = useState("");
@@ -49,7 +50,7 @@ export default function ThemedInputPage() {
     {SelectedImage && (
       <div className="mt-4">
         <p className="text-gray-600 dark:text-gray-300">Selected Image Preview:</p>
-        <img
+        <Image
           src={SelectedImage}
           alt="Selected"
           className="mt-2 rounded-lg w-full max-h-64 object-cover"
