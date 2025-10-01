@@ -51,7 +51,7 @@ export default function ProductCard({ isActive, showActive, product, className, 
         {product.condition && (
           <Chip
             className="absolute top-2 left-2 text-xs sm:text-sm"
-            color="secondary"
+            color="primary"
             variant="shadow"
             size="md"
           >
@@ -112,7 +112,7 @@ export default function ProductCard({ isActive, showActive, product, className, 
           <div className="mt-2">
             <Chip
               className="text-xs dark:text-white"
-              color="secondary"
+              color="primary"
               variant="faded"
               size="md"
             >
@@ -130,7 +130,7 @@ export default function ProductCard({ isActive, showActive, product, className, 
             as={Link}
             href={`/item/${product.id}`}
             className="w-full min-h-[36px] text-sm sm:text-base"
-            color="secondary"
+            color="primary"
             variant="flat"
           >
             View Details

@@ -1,7 +1,6 @@
 "use client";
-
 import React, { useState } from "react";
-import { Button, Input } from "@heroui/react";
+import { Button, Input, Textarea, Select, SelectItem, Progress, Switch } from "@heroui/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { isValidImage } from "@/utils/images/compression";
@@ -21,6 +20,7 @@ export default function SellPage() {
   const [productName, setProductName] = useState("");
   const [selectedImages, setSelectedImages] = useState<ImagePreview[]>([]);
   const [productPrice, setProductPrice] = useState("");
+  const [priceOnRequest, setPriceOnRequest] = useState(false);
   const [productDescription, setProductDescription] = useState("");
   const [productAge, setProductAge] = useState("");
   const [productCategory, setProductCategory] = useState("");
@@ -29,6 +29,8 @@ export default function SellPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  const maxUploadSize = 7 // In Mb
 
   // Function to handle multiple file selection
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,8 +41,8 @@ export default function SellPage() {
     const newImages: ImagePreview[] = [];
 
     // Check if adding these images would exceed the limit
-    if (selectedImages.length + files.length > 5) {
-      setError("Maximum 5 images allowed per listing");
+    if (selectedImages.length + files.length > 3) {
+      setError("Maximum 3 images allowed per listing");
       return;
     }
 
@@ -51,9 +53,9 @@ export default function SellPage() {
         return;
       }
 
-      // Check file size (10MB limit - the helper will handle compression)
-      if (file.size > 10 * 1024 * 1024) {
-        setError(`File too large: ${file.name}. Maximum size is 10MB.`);
+      // Check file size using the maxUploadSize constant
+      if (file.size > maxUploadSize * 1024 * 1024) {
+        setError(`File too large: ${file.name}. Maximum size is ${maxUploadSize}MB.`);
         return;
       }
 
@@ -97,14 +99,17 @@ export default function SellPage() {
       if (!productName.trim()) {
         throw new Error("Product name is required");
       }
-      if (!productPrice || Number(productPrice) <= 0) {
-        throw new Error("Please enter a valid price");
+      if (!priceOnRequest && (!productPrice || Number(productPrice) <= 0)) {
+        throw new Error("Please enter a valid price or enable 'Price on Request'");
       }
       if (!productCategory) {
         throw new Error("Please select a category");
       }
       if (!productCondition) {
         throw new Error("Please select a condition");
+      }
+      if (!productAge || Number(productAge) < 0) {
+        throw new Error("Please enter a valid product age");
       }
       if (selectedImages.length === 0) {
         throw new Error("Please upload at least one image");
@@ -126,9 +131,9 @@ export default function SellPage() {
         imageFiles,
         data.claims.sub,
         {
-          maxSizeMB: 1,
+          maxSizeMB: 3,
           maxWidthOrHeight: 1200,
-          quality: 0.85,
+          quality: 0.75,
         },
         (progress) => {
           // Update progress (50% of total progress for uploads)
@@ -152,11 +157,11 @@ export default function SellPage() {
       const listingResult = await createListing({
         name: productName.trim(),
         description: productDescription.trim(),
-        price: Number(productPrice),
+        price: priceOnRequest ? null : Number(productPrice),
         category: productCategory,
         condition: productCondition,
         imageUrls: uploadResult.urls,
-        productAge: productAge ? Number(productAge) : undefined,
+        productAge: Number(productAge),
       });
 
       setUploadProgress(100);
@@ -207,28 +212,25 @@ export default function SellPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Product Name */}
-        <div>
-          <label htmlFor="productName" className="block text-sm font-medium mb-2">
-            Product Name <span className="text-red-500">*</span>
-          </label>
-          <Input
-            id="productName"
-            type="text"
-            placeholder="e.g., iPhone 13 Pro Max"
-            value={productName}
-            onChange={(e) => setProductName(e.target.value)}
-            required
-            disabled={isLoading}
-            className="w-full"
-          />
-        </div>
+        <Input
+          id="productName"
+          type="text"
+          label="Product Name"
+          labelPlacement="outside"
+          placeholder="e.g., iPhone 13 Pro Max"
+          value={productName}
+          onChange={(e) => setProductName(e.target.value)}
+          isRequired
+          isDisabled={isLoading}
+          className="w-full"
+        />
 
         {/* Product Images */}
         <div>
           <label className="block text-sm font-medium mb-2">
             Product Images <span className="text-red-500">*</span>
             <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-              (Max 5 images, up to 10MB each)
+              (Max 3 images, up to {maxUploadSize}MB each)
             </span>
           </label>
 
@@ -290,146 +292,141 @@ export default function SellPage() {
         </div>
 
         {/* Product Price */}
-        <div>
-          <label htmlFor="productPrice" className="block text-sm font-medium mb-2">
-            Price (₹) <span className="text-red-500">*</span>
-          </label>
-          <Input
-            id="productPrice"
-            type="number"
-            placeholder="0.00"
-            value={productPrice}
-            onChange={(e) => setProductPrice(e.target.value)}
-            required
-            min="0"
-            step="0.01"
-            disabled={isLoading}
-            className="w-full"
-          />
+        <div className="space-y-3">
+          <div className="flex items-center justify-between mb-10">
+            <Switch
+              isSelected={priceOnRequest}
+              onValueChange={(value) => {
+                setPriceOnRequest(value);
+                if (value) {
+                  setProductPrice("");
+                }
+              }}
+              isDisabled={isLoading}
+            >
+              <span className="text-sm">Price on Request</span>
+            </Switch>
+          </div>
+          {!priceOnRequest && (
+            <Input
+              id="productPrice"
+              type="number"
+              label="Price (₹)"
+              labelPlacement="outside"
+              placeholder="0.00"
+              value={productPrice}
+              onChange={(e) => setProductPrice(e.target.value)}
+              isRequired
+              min="0"
+              step="1"
+              isDisabled={isLoading}
+              className="w-full"
+            />
+          )}
         </div>
 
         {/* Product Description */}
-        <div>
-          <label htmlFor="productDescription" className="block text-sm font-medium mb-2">
-            Description
-          </label>
-          <textarea
-            id="productDescription"
-            placeholder="Describe your product..."
-            value={productDescription}
-            onChange={(e) => setProductDescription(e.target.value)}
-            disabled={isLoading}
-            rows={4}
-            className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg 
-              bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white 
-              focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-              disabled:opacity-50 disabled:cursor-not-allowed"
-          />
-        </div>
+        <Textarea
+          id="productDescription"
+          label="Description"
+          labelPlacement="outside"
+          placeholder="Describe your product..."
+          value={productDescription}
+          onChange={(e) => setProductDescription(e.target.value)}
+          isDisabled={isLoading}
+          minRows={4}
+          isRequired
+          className="w-full"
+        />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
           {/* Product Category */}
-          <div>
-            <label htmlFor="productCategory" className="block text-sm font-medium mb-2">
-              Category <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="productCategory"
-              value={productCategory}
-              onChange={(e) => setProductCategory(e.target.value)}
-              required
-              disabled={isLoading}
-              className="block w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg 
-                bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white 
-                focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="">Select a category</option>
-              <option value="electronics">Electronics</option>
-              <option value="fashion">Fashion</option>
-              <option value="home">Home & Furniture</option>
-              <option value="books">Books</option>
-              <option value="sports">Sports & Outdoors</option>
-              <option value="beauty">Beauty & Personal Care</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
+          <Select
+            id="productCategory"
+            label="Category"
+            labelPlacement="outside"
+            placeholder="Select a category"
+            selectedKeys={productCategory ? [productCategory] : []}
+            onSelectionChange={(keys) => {
+              const selectedValue = Array.from(keys)[0] as string;
+              setProductCategory(selectedValue || "");
+            }}
+            isRequired
+            isDisabled={isLoading}
+            className="w-full"
+          >
+            <SelectItem key="Electronics">Electronics</SelectItem>
+            <SelectItem key="Fashion">Fashion</SelectItem>
+            <SelectItem key="Home & Furniture">Home & Furniture</SelectItem>
+            <SelectItem key="Books">Books</SelectItem>
+            <SelectItem key="Sports & Outdoors">Sports & Outdoors</SelectItem>
+            <SelectItem key="Beauty & Personal Care">Beauty & Personal Care</SelectItem>
+            <SelectItem key="Other">Other</SelectItem>
+          </Select>
 
           {/* Product Condition */}
-          <div>
-            <label htmlFor="productCondition" className="block text-sm font-medium mb-2">
-              Condition <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="productCondition"
-              value={productCondition}
-              onChange={(e) => setProductCondition(e.target.value)}
-              required
-              disabled={isLoading}
-              className="block w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg 
-                bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white 
-                focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="">Select condition</option>
-              <option value="new">New</option>
-              <option value="like-new">Like New</option>
-              <option value="good">Good</option>
-              <option value="fair">Fair</option>
-              <option value="poor">Poor</option>
-            </select>
-          </div>
+          <Select
+            id="productCondition"
+            label="Condition"
+            labelPlacement="outside"
+            placeholder="Select condition"
+            selectedKeys={productCondition ? [productCondition] : []}
+            onSelectionChange={(keys) => {
+              const selectedValue = Array.from(keys)[0] as string;
+              setProductCondition(selectedValue || "");
+            }}
+            isRequired
+            isDisabled={isLoading}
+            className="w-full"
+          >
+            <SelectItem key="New">New</SelectItem>
+            <SelectItem key="Like New">Like New</SelectItem>
+            <SelectItem key="Good">Good</SelectItem>
+            <SelectItem key="Fair">Fair</SelectItem>
+            <SelectItem key="Poor">Poor</SelectItem>
+          </Select>
         </div>
 
-        {/* Product Age (Optional) */}
-        <div>
-          <label htmlFor="productAge" className="block text-sm font-medium mb-2">
-            Product Age (months)
-            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-              (Optional)
-            </span>
-          </label>
-          <Input
-            id="productAge"
-            type="number"
-            placeholder="e.g., 6"
-            value={productAge}
-            onChange={(e) => setProductAge(e.target.value)}
-            min="0"
-            disabled={isLoading}
-            className="w-full"
-          />
-        </div>
+        {/* Product Age */}
+        <Input
+          id="productAge"
+          type="number"
+          label="Product Age (months)"
+          labelPlacement="outside"
+          placeholder="e.g., 6"
+          value={productAge}
+          onChange={(e) => setProductAge(e.target.value)}
+          min="0"
+          isDisabled={isLoading}
+          isRequired
+          className="w-full"
+        />
 
         {/* Upload Progress */}
         {isLoading && uploadProgress > 0 && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Uploading...</span>
-              <span>{uploadProgress}%</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-              <div
-                className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              ></div>
-            </div>
-          </div>
+          <Progress
+            label="Uploading..."
+            value={uploadProgress}
+            color="primary"
+            showValueLabel={true}
+            className="w-full"
+          />
         )}
 
         {/* Submit Button */}
         <div className="flex gap-4">
           <Button
             type="submit"
-            disabled={isLoading}
-            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            isDisabled={isLoading}
+            color="primary"
+            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold "
           >
             {isLoading ? "Creating Listing..." : "Create Listing"}
           </Button>
           <Button
             type="button"
-            onClick={() => router.back()}
-            disabled={isLoading}
+            onPress={() => router.back()}
+            isDisabled={isLoading}
             className="px-6 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold py-3 rounded-lg disabled:opacity-50"
           >
             Cancel

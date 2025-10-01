@@ -1,6 +1,6 @@
-"use server";
+"use client";
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/utils/supabase/client";
 import { TablesInsert } from "@/types/database.types";
 import { uploadImage } from "@/utils/images/storage";
 import {
@@ -9,16 +9,6 @@ import {
   type CompressionOptions,
   type CompressionResult,
 } from "@/utils/images/compression";
-
-export interface CreateListingData {
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  condition: string;
-  imageUrls: string[];
-  productAge?: number;
-}
 
 export interface CreateListingResult {
   success: boolean;
@@ -31,7 +21,9 @@ export interface CreateListingResult {
  * Creates a new listing in the database
  */
 export async function createListing(
-  data: CreateListingData
+  data: Omit<TablesInsert<"listings">, "created_at" | "expired_at"> & {
+    imageUrls: string[];
+  }
 ): Promise<CreateListingResult> {
   try {
     const supabase = await createClient();
@@ -49,7 +41,7 @@ export async function createListing(
     }
 
     // Validate required fields
-    if (!data.name || !data.price || !data.category || !data.condition) {
+    if (!data.name || !data.category || !data.condition) {
       return {
         success: false,
         message: "Please fill in all required fields",
@@ -57,8 +49,8 @@ export async function createListing(
       };
     }
 
-    // Validate price
-    if (data.price <= 0) {
+    // Validate price (if provided)
+    if (data.price !== null && data.price !== undefined && data.price <= 0) {
       return {
         success: false,
         message: "Price must be greater than 0",
@@ -79,17 +71,16 @@ export async function createListing(
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
 
-    // Prepare listing data
+    // Prepare listing data using TablesInsert type
     const listingData: TablesInsert<"listings"> = {
       user_id: supabaseData.claims.sub,
-      name: data.name.trim(),
-      description: data.description?.trim() || null,
-      price: data.price,
+      name: data.name,
+      description: data.description || null,
+      price: data.price ?? null,
       category: data.category,
       condition: data.condition,
       image: data.imageUrls,
-      expired_at: expiresAt.toISOString(),
-      created_at: new Date().toISOString(),
+      productAge: data.productAge,
     };
 
     // Insert the listing
@@ -262,11 +253,11 @@ export async function uploadMultipleListingImages(
   };
 
   // Validate that we don't exceed the maximum number of images
-  if (files.length > 5) {
+  if (files.length > 3) {
     return {
       ...results,
       success: false,
-      errors: ["Maximum 5 images allowed per listing"],
+      errors: ["Maximum 3 images allowed per listing"],
     };
   }
 

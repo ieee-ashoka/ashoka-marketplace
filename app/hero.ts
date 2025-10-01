@@ -4,15 +4,15 @@ export default heroui({
   themes: {
     light: {
       colors: {
-        secondary: {
+        primary: {
           DEFAULT: "#4338ca",
         },
       },
     },
     dark: {
       colors: {
-        secondary: {
-          DEFAULT: "#312e81",
+        primary: {
+          DEFAULT: "#312c85",
         },
       },
     },

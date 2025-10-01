@@ -41,61 +41,70 @@ export default function ProfilePage() {
     async function fetchProfileData() {
       try {
         const {
-          data: { user },
-        } = await supabase.auth.getUser();
+          data,
+        } = await supabase.auth.getClaims();
 
-        if (!user) {
+        if (!data?.claims) {
           // Redirect to login if not authenticated
           router.push("/login");
           return;
         }
 
-        // Fetch profile data
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
+        const userId = data.claims.sub;
 
-        if (profileError) throw profileError;
+        // Fetch all data concurrently using Promise.all for better performance
+        const [profileResult, listingsResult, wishlistEntriesResult] = await Promise.all([
+          // Fetch profile data
+          supabase
+            .from("profiles")
+            .select("*")
+            .eq("user_id", userId)
+            .single(),
+          // Fetch user's listings
+          supabase
+            .from("listings")
+            .select("*")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false }),
+          // Fetch wishlist entries to get listing_ids
+          supabase
+            .from("wishlist")
+            .select("listing_id")
+            .eq("user_id", userId),
+        ]);
 
-        // Fetch user's listings
-        const { data: listingsData, error: listingsError } = await supabase
-          .from("listings")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
+        // Handle errors from any of the queries
+        if (profileResult.error) throw profileResult.error;
+        if (listingsResult.error) throw listingsResult.error;
+        if (wishlistEntriesResult.error) throw wishlistEntriesResult.error;
 
-        if (listingsError) throw listingsError;
+        // Set profile and listings data
+        setProfile(profileResult.data);
+        setMyListings(listingsResult.data || []);
 
-        // First fetch wishlist entries to get listing_ids
-        const { data: wishlistEntries, error: wishlistError } = await supabase
-          .from("wishlist")
-          .select("listing_id")
-          .eq("user_id", user.id);
-
-        if (wishlistError) throw wishlistError;
-
-        // No wishlist items case
-        if (!wishlistEntries || wishlistEntries.length === 0) {
+        // Handle wishlist - fetch actual listing data if there are wishlist entries
+        if (!wishlistEntriesResult.data || wishlistEntriesResult.data.length === 0) {
           setWishlist([]);
         } else {
           // Extract listing_ids from wishlist entries
-          const listingIds = wishlistEntries.map(item => item.listing_id);
+          const listingIds = wishlistEntriesResult.data
+            .map(item => item.listing_id)
+            .filter((id): id is number => id !== null);
 
-          // Fetch the actual listing data for items in wishlist
-          const { data: wishlistListings, error: wishlistListingsError } = await supabase
-            .from("listings")
-            .select("*")
-            .in("id", listingIds);
+          if (listingIds.length === 0) {
+            setWishlist([]);
+          } else {
+            // Fetch the actual listing data for items in wishlist
+            const { data: wishlistListings, error: wishlistListingsError } = await supabase
+              .from("listings")
+              .select("*")
+              .in("id", listingIds);
 
-          if (wishlistListingsError) throw wishlistListingsError;
+            if (wishlistListingsError) throw wishlistListingsError;
 
-          setWishlist(wishlistListings || []);
+            setWishlist(wishlistListings || []);
+          }
         }
-
-        setProfile(profileData);
-        setMyListings(listingsData || []);
       } catch (error) {
         console.error("Error fetching profile data:", error);
       } finally {
@@ -205,7 +214,7 @@ export default function ProfilePage() {
           <>
             <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-2 sm:gap-0">
               <h2 className="text-lg sm:text-xl font-bold text-foreground">My Listings</h2>
-              <Button as={Link} href="/sell" color="primary" variant="flat" size="sm" className="w-full sm:w-auto">
+              <Button as={Link} href="/sell" color="primary" size="md" className="w-full sm:w-auto">
                 Create New Listing
               </Button>
             </div>
@@ -226,7 +235,7 @@ export default function ProfilePage() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                 {myListings.map((listing) => {
                   const status = getListingStatus(listing);
                   const isActive = status === "active";
@@ -243,8 +252,8 @@ export default function ProfilePage() {
                             size="sm"
                             variant="light"
                             as={Link}
-                            href={`/listings/${listing.id}/edit`}
-                            className="min-w-0 px-2 sm:px-3"
+                            href={`/listing/${listing.id}/edit`}
+                            className="min-w-0 w-full px-2 sm:px-3"
                           >
                             Edit
                           </Button>
@@ -253,8 +262,8 @@ export default function ProfilePage() {
                             color="primary"
                             variant="flat"
                             as={Link}
-                            href={`/listings/${listing.id}`}
-                            className="min-w-0 px-2 sm:px-3"
+                            href={`/listing/${listing.id}`}
+                            className="min-w-0 w-full px-2 sm:px-3"
                           >
                             View
                           </Button>

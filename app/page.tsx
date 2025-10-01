@@ -135,7 +135,7 @@ export default function Home() {
                   as={Link}
                   href="/browse"
                   size="lg"
-                  color="secondary"
+                  color="primary"
                   className="dark:text-white"
                   variant="faded"
                 >
@@ -144,7 +144,7 @@ export default function Home() {
                 <Button
                   as={Link}
                   href="/sell"
-                  color="secondary"
+                  color="primary"
                   size="lg"
                   variant="shadow"
                 >

@@ -15,25 +15,25 @@ import {
 import { Search, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import ThemeSwitcher from "./ThemeSwitcher";
+import { AnimatedThemeToggler } from "@/components/ui/theme-switcher";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { User } from "@supabase/supabase-js";
+import { JwtClaims } from "@/types/supabase";
 
 export default function AppNavbar() {
   const pathname = usePathname();
   const supabase = createClient();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<JwtClaims | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const getUser = async () => {
       try {
         const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        setUser(user);
+          data,
+        } = await supabase.auth.getClaims();
+        setUser(data?.claims as JwtClaims | null);
       } catch (error) {
         console.error("Error fetching user:", error);
       } finally {
@@ -46,8 +46,18 @@ export default function AppNavbar() {
     // Set up auth listener
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null);
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        try {
+          const { data } = await supabase.auth.getClaims();
+          setUser(data?.claims as JwtClaims | null);
+        } catch (error) {
+          console.error("Error fetching user claims:", error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -58,6 +68,12 @@ export default function AppNavbar() {
     { name: "Browse", href: "/browse" },
     { name: "Sell", href: "/sell" },
     // Remove Login from menu items and handle separately
+  ];
+  const loggedInMenuItems = [
+    { name: "My Profile", href: "/profile" },
+    { name: "My Listings", href: "/listings" },
+    { name: "Settings", href: "/settings" },
+    { name: "Logout", href: "/logout" },
   ];
 
   return (
@@ -127,24 +143,17 @@ export default function AppNavbar() {
                 />
               </DropdownTrigger>
               <DropdownMenu aria-label="User menu" className="text-gray-600 dark:text-gray-300">
-                <DropdownItem key="profile" as={Link} href="/profile">
-                  My Profile
-                </DropdownItem>
-                {/* <DropdownItem key="my-listings" as={Link} href="/my-listings">
-                  My Listings
-                </DropdownItem> */}
-                <DropdownItem key="settings" as={Link} href="/settings">
-                  Settings
-                </DropdownItem>
-                <DropdownItem
-                  key="logout"
-                  className="text-danger"
-                  color="danger"
-                  as={Link}
-                  href="/logout"
-                >
-                  Sign Out
-                </DropdownItem>
+                {loggedInMenuItems.map((item) => (
+                  <DropdownItem
+                    key={item.name.toLowerCase().replace(/\s+/g, '')}
+                    as={Link}
+                    href={item.href}
+                    className={item.name === "Logout" ? "text-danger" : ""}
+                    color={item.name === "Logout" ? "danger" : "default"}
+                  >
+                    {item.name === "Logout" ? "Sign Out" : item.name}
+                  </DropdownItem>
+                ))}
               </DropdownMenu>
             </Dropdown>
           </>
@@ -171,7 +180,7 @@ export default function AppNavbar() {
           </NavbarItem>
         )}
         <NavbarItem className="hidden md:flex">
-          <ThemeSwitcher />
+          <AnimatedThemeToggler className="text-gray-600 dark:text-gray-300 hover:text-indigo-600" />
         </NavbarItem>
       </NavbarContent>
     </Navbar>

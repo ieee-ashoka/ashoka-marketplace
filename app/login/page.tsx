@@ -12,10 +12,10 @@ export default function Login() {
     const checkUserAndLogin = async () => {
       // Check if user is already logged in
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data,
+      } = await supabase.auth.getClaims();
 
-      if (user) {
+      if (data?.claims) {
         // User is already logged in, redirect to homepage
         router.push("/");
       } else {

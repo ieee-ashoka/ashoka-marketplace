@@ -50,6 +50,7 @@ export type Database = {
           image: string[] | null
           name: string | null
           price: number | null
+          productAge: number | null
           user_id: string | null
         }
         Insert: {
@@ -62,6 +63,7 @@ export type Database = {
           image?: string[] | null
           name?: string | null
           price?: number | null
+          productAge?: number | null
           user_id?: string | null
         }
         Update: {
@@ -74,6 +76,7 @@ export type Database = {
           image?: string[] | null
           name?: string | null
           price?: number | null
+          productAge?: number | null
           user_id?: string | null
         }
         Relationships: []

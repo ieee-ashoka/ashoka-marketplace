@@ -45,3 +45,9 @@ h6 {
 p {
   font-family: "CodecPro-Regular", sans-serif;
 }
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
