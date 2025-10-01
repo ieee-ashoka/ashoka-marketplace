@@ -16,11 +16,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased bg-background">
+      <body className="antialiased">
         <Providers>
-          <Navbar />
-          {children}
-          <Footer />
+          <main className="flex min-h-screen flex-col bg-background">
+            <Navbar />
+            {children}
+            <Footer />
+          </main>
         </Providers>
       </body>
     </html>

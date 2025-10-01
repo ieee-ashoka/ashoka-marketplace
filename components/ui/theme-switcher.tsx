@@ -1,7 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useRef } from "react"
 import { Moon, Sun } from "lucide-react"
+import { useTheme } from "next-themes"
 import { flushSync } from "react-dom"
 
 import { cn } from "@/lib/utils"
@@ -11,34 +12,26 @@ type Props = {
 }
 
 export const AnimatedThemeToggler = ({ className }: Props) => {
-    const [isDark, setIsDark] = useState(false)
+    const { setTheme, resolvedTheme } = useTheme()
     const buttonRef = useRef<HTMLButtonElement>(null)
 
-    useEffect(() => {
-        const updateTheme = () => {
-            setIsDark(document.documentElement.classList.contains("dark"))
-        }
-
-        updateTheme()
-
-        const observer = new MutationObserver(updateTheme)
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ["class"],
-        })
-
-        return () => observer.disconnect()
-    }, [])
+    // Determine if current theme is dark
+    const isDark = resolvedTheme === "dark"
 
     const toggleTheme = useCallback(async () => {
         if (!buttonRef.current) return
 
+        const newTheme = isDark ? "light" : "dark"
+
+        // Check if View Transitions API is supported
+        if (!document.startViewTransition) {
+            setTheme(newTheme)
+            return
+        }
+
         await document.startViewTransition(() => {
             flushSync(() => {
-                const newTheme = !isDark
-                setIsDark(newTheme)
-                document.documentElement.classList.toggle("dark")
-                localStorage.setItem("theme", newTheme ? "dark" : "light")
+                setTheme(newTheme)
             })
         }).ready
 
@@ -64,11 +57,16 @@ export const AnimatedThemeToggler = ({ className }: Props) => {
                 pseudoElement: "::view-transition-new(root)",
             }
         )
-    }, [isDark])
+    }, [isDark, setTheme])
 
     return (
-        <button ref={buttonRef} onClick={toggleTheme} className={cn(className)}>
-            {isDark ? <Sun /> : <Moon />}
+        <button
+            ref={buttonRef}
+            onClick={toggleTheme}
+            className={cn(className)}
+            aria-label="Toggle theme"
+        >
+            {isDark ? <Sun size={20} /> : <Moon size={20} />}
         </button>
     )
 }

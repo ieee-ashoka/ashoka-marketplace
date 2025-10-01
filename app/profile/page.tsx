@@ -9,13 +9,21 @@ import {
   Chip,
   Tab,
   Tabs,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
 } from "@heroui/react";
 import {
   Heart,
   Package,
   ShoppingBag,
+  Trash2,
 } from "lucide-react";
 import { Database } from "@/types/database.types";
+import { deleteListing } from "./helpers";
 import ProductCard from "@/components/ProductCard";
 import ProfileSkeleton from "@/components/loading/profile";
 import ProfileCard from "@/components/ProfileCard";
@@ -35,6 +43,9 @@ export default function ProfilePage() {
   const [wishlist, setWishlist] = useState<Listing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("listings");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [listingToDelete, setListingToDelete] = useState<Listing | null>(null);
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
     // Fetch user profile, listings and wishlist data
@@ -123,6 +134,34 @@ export default function ProfilePage() {
     const expiredAt = new Date(listing.expired_at);
 
     return now > expiredAt ? "expired" : "active";
+  };
+
+  // Open delete confirmation modal
+  const openDeleteModal = (listing: Listing) => {
+    setListingToDelete(listing);
+    onOpen();
+  };
+
+  // Handle delete listing
+  const handleDeleteListing = async () => {
+    if (!listingToDelete) return;
+
+    setDeletingId(listingToDelete.id);
+    onClose();
+
+    try {
+      const result = await deleteListing(listingToDelete.id);
+
+      if (result.success) {
+        // Remove from local state
+        setMyListings(myListings.filter(listing => listing.id !== listingToDelete.id));
+      }
+    } catch (error) {
+      console.error("Error deleting listing:", error);
+    } finally {
+      setDeletingId(null);
+      setListingToDelete(null);
+    }
   };
 
   if (isLoading) {
@@ -267,6 +306,19 @@ export default function ProfilePage() {
                           >
                             View
                           </Button>
+                          <Button
+                            size="sm"
+                            color="danger"
+                            variant="light"
+                            isIconOnly
+                            isLoading={deletingId === listing.id}
+                            isDisabled={deletingId !== null}
+                            onPress={() => openDeleteModal(listing)}
+                            className="min-w-0"
+                            aria-label="Delete listing"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
                         </div>
                       }
                     />
@@ -379,6 +431,45 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} placement="center">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                Delete Listing
+              </ModalHeader>
+              <ModalBody>
+                <p className="text-foreground">
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold">{listingToDelete?.name}</span>?
+                </p>
+                <p className="text-sm text-danger">
+                  This action cannot be undone. All images associated with this listing will also be deleted.
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="light"
+                  onPress={onClose}
+                  isDisabled={deletingId !== null}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  color="danger"
+                  onPress={handleDeleteListing}
+                  isLoading={deletingId === listingToDelete?.id}
+                  isDisabled={deletingId !== null && deletingId !== listingToDelete?.id}
+                >
+                  Delete
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

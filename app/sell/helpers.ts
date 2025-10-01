@@ -21,7 +21,7 @@ export interface CreateListingResult {
  * Creates a new listing in the database
  */
 export async function createListing(
-  data: Omit<TablesInsert<"listings">, "created_at" | "expired_at"> & {
+  data: Omit<TablesInsert<"listings">, "created_at"> & {
     imageUrls: string[];
   }
 ): Promise<CreateListingResult> {
@@ -81,6 +81,7 @@ export async function createListing(
       condition: data.condition,
       image: data.imageUrls,
       productAge: data.productAge,
+      expired_at: expiresAt.toISOString(),
     };
 
     // Insert the listing
@@ -180,17 +181,7 @@ export async function uploadListingImage(
       };
     }
 
-    // Step 6: Validate compressed file size
-    if (compressionResult.file.size > 3 * 1024 * 1024) {
-      // 3MB after compression
-      return {
-        success: false,
-        error:
-          "Compressed image is still too large. Please use a smaller image or lower quality.",
-      };
-    }
-
-    // Step 7: Upload the compressed image to Supabase storage
+    // Step 6: Upload the compressed image to Supabase storage
     const uploadResult = await uploadImage(
       compressionResult.file,
       "listing_images",

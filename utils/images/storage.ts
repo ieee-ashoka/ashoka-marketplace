@@ -50,7 +50,7 @@ export async function uploadImage(
     const randomStr = Math.random().toString(36).substring(7);
 
     const folderPath = folder ? `${folder}/` : "";
-    const fileName = `${userId}/${folderPath}${timestamp}-${randomStr}.${fileExt}`;
+    const fileName = `${folderPath}${userId}/${timestamp}-${randomStr}.${fileExt}`;
 
     // Upload to storage
     const { data, error } = await supabase.storage
