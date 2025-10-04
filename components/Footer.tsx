@@ -1,6 +1,6 @@
 // components/Footer.tsx
 "use client";
-
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Footer() {
@@ -14,6 +14,15 @@ export default function Footer() {
               A platform for Ashoka University students to buy and sell
               second-hand items on campus.
             </p>
+            <Link href="https://ieee-ashoka.in" className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm">
+              <Image
+                src="/images/logo.png"
+                alt="IEEE Ashoka Student Branch"
+                width={100}
+                height={30}
+                className="mt-4"
+              />
+            </Link>
           </div>
           <div>
             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import {
   ChevronRight,
   Tag,
@@ -16,48 +17,61 @@ import ProductCard from "../components/ProductCard";
 import { subDays } from "date-fns";
 import { Tables } from "@/types/database.types";
 import { Button } from "@heroui/react";
+import { createClient } from "@/utils/supabase/client";
 
 // import Image from "next/image";
 
+interface IconProps {
+  size?: number | string;
+  color?: string;
+  strokeWidth?: number | string;
+  className?: string;
+}
+
+// Default icon mapping for categories
+const iconMap: Record<string, React.ComponentType<IconProps>> = {
+  "textbooks": BookCopy,
+  "electronics": Cable,
+  "furniture": Lamp,
+  "clothing": Shirt,
+  "accessories": Tags,
+  "decor": House,
+  "books": BookCopy,
+  "home": House,
+  "sports": Truck,
+  "vehicles": Truck,
+  "default": Tag
+};
+
 export default function Home() {
-  const categories = [
-    {
-      name: "Textbooks",
-      icon: BookCopy,
-      color: "bg-blue-100 dark:bg-blue-900",
-      iconColor: "text-blue-600 dark:text-blue-400",
-    },
-    {
-      name: "Electronics",
-      icon: Cable,
-      color: "bg-purple-100 dark:bg-purple-900",
-      iconColor: "text-purple-600 dark:text-purple-400",
-    },
-    {
-      name: "Furniture",
-      icon: Lamp,
-      color: "bg-yellow-100 dark:bg-yellow-900",
-      iconColor: "text-yellow-600 dark:text-yellow-400",
-    },
-    {
-      name: "Clothing",
-      icon: Shirt,
-      color: "bg-green-100 dark:bg-green-900",
-      iconColor: "text-green-600 dark:text-green-400",
-    },
-    {
-      name: "Accessories",
-      icon: Tags,
-      color: "bg-red-100 dark:bg-red-900",
-      iconColor: "text-red-600 dark:text-red-400",
-    },
-    {
-      name: "Decor",
-      icon: House,
-      color: "bg-orange-100 dark:bg-orange-900",
-      iconColor: "text-orange-600 dark:text-orange-400",
-    },
-  ];
+  const [categories, setCategories] = useState<Tables<"categories">[]>([]);
+  // const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch categories from database
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("categories")
+          .select("*")
+          .order("name")
+          .limit(6); // Show top 6 categories on homepage
+
+        if (error) throw error;
+        setCategories(data || []);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        // Fallback to empty array
+        setCategories([]);
+      } finally {
+        // setIsLoading(false);
+      }
+    }
+
+    fetchCategories();
+  }, []);
+
 
   // Transform the featuredListings data to match the product schema
   const featuredListings: Tables<"listings">[] = [
@@ -67,22 +81,25 @@ export default function Home() {
       price: null,
       image: ["/images/placeholder-books.jpg"],
       created_at: subDays(new Date(), 2).toISOString(),
-      category: "Textbooks",
+      category: 1, // Using ID instead of string
       condition: "Like New",
       description: null,
       expired_at: null,
       user_id: null,
+      productAge: null
     },
     {
       id: 2,
       name: "Desk Lamp",
       price: 600,
-      image: null, created_at: subDays(new Date(), 5).toISOString(),
-      category: "Decor",
+      image: null,
+      created_at: subDays(new Date(), 5).toISOString(),
+      category: 2, // Using ID instead of string
       condition: "Good",
       description: null,
       expired_at: null,
       user_id: null,
+      productAge: null
     },
     {
       id: 3,
@@ -90,11 +107,12 @@ export default function Home() {
       price: 1200,
       image: ["/placeholder-speaker.jpg"],
       created_at: subDays(new Date(), 1).toISOString(),
-      category: "Electronics",
+      category: 3, // Using ID instead of string
       condition: "Excellent",
       description: "High quality portable speaker with great bass response",
       expired_at: null,
       user_id: null,
+      productAge: null
     },
     {
       id: 4,
@@ -102,12 +120,13 @@ export default function Home() {
       price: 1500,
       image: ["/placeholder-shelf.jpg"],
       created_at: subDays(new Date(), 3).toISOString(),
-      category: "Furniture",
+      category: 4, // Using ID instead of string
       condition: null,
       description:
         "Sturdy wooden bookshelf, perfect for dorm rooms. Holds up to 50 books.",
       expired_at: null,
       user_id: null,
+      productAge: null
     },
   ];
 
@@ -154,7 +173,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-        {/* <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-indigo-900 to-indigo-800 dark:from-indigo-950 dark:to-indigo-900 hidden lg:block" /> */}
       </div>
 
       {/* Categories Section */}
@@ -164,20 +182,24 @@ export default function Home() {
             Browse Categories
           </h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            {categories.map((category) => (
-              <Link
-                key={category.name}
-                href={`/category/${category.name.toLowerCase()}`}
-                className={`${category.color} rounded-xl p-6 flex flex-col items-center justify-center transition-transform hover:scale-105`}
-              >
-                <span className={`text-4xl mb-2 ${category.iconColor}`}>
-                  {<category.icon />}
-                </span>
-                <span className="font-medium text-foreground">
-                  {category.name}
-                </span>
-              </Link>
-            ))}
+            {categories.map((category) => {
+              // Get icon from iconMap or use default
+              const IconComponent = iconMap[category.key?.toLowerCase() || category.name?.toLowerCase() || 'default'] || iconMap.default;
+              return (
+                <Link
+                  key={category.id}
+                  href={`/category/${category.key || category.name?.toLowerCase() || ''}`}
+                  className={`${category.color} rounded-xl p-6 flex flex-col items-center justify-center transition-transform hover:scale-105`}
+                >
+                  <div className={`text-4xl mb-2 ${category.iconColor}`}>
+                    <IconComponent />
+                  </div>
+                  <span className="font-medium text-foreground">
+                    {category.name}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -273,9 +295,9 @@ export default function Home() {
             href="/browse"
             className="bg-background px-8 py-3 text-base font-medium text-indigo-700 dark:text-indigo-400 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-900"
             size="lg"
-            // startContent={
-            //   <Image src="/images/google.png" alt="Google logo" width="20" height="20" />
-            // }
+          // startContent={
+          //   <Image src="/images/google.png" alt="Google logo" width="20" height="20" />
+          // }
           >
             Browse New Items
           </Button>

@@ -1,12 +1,13 @@
 "use client";
-import React, { useState } from "react";
-import { Button, Input, Textarea, Select, SelectItem, Progress, Switch } from "@heroui/react";
+import React, { useState, useEffect } from "react";
+import { Button, Input, Textarea, Select, SelectItem, Progress, Switch, Alert } from "@heroui/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { isValidImage } from "@/utils/images/compression";
 import { deleteImage } from "@/utils/images/storage";
 import { createListing, uploadMultipleListingImages } from "./helpers";
 import { createClient } from "@/utils/supabase/client";
+import { Tables } from "@/types/database.types";
 
 interface ImagePreview {
   file: File;
@@ -23,14 +24,36 @@ export default function SellPage() {
   const [priceOnRequest, setPriceOnRequest] = useState(false);
   const [productDescription, setProductDescription] = useState("");
   const [productAge, setProductAge] = useState("");
-  const [productCategory, setProductCategory] = useState("");
+  const [productCategory, setProductCategory] = useState<number | null>(null);
   const [productCondition, setProductCondition] = useState("");
+  const [categories, setCategories] = useState<Tables<"categories">[]>([]);
+  const [success, setSuccess] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const maxUploadSize = 7 // In Mb
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("categories")
+          .select("*")
+          .order("name");
+
+        if (error) throw error;
+        setCategories(data || []);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    }
+
+    fetchCategories();
+  }, []);
 
   // Function to handle multiple file selection
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -180,7 +203,7 @@ export default function SellPage() {
       }
 
       // Success! Redirect to the listing or profile page
-      alert(listingResult.message);
+      setSuccess(true);
       router.push("/"); // or `/listing/${listingResult.listingId}`
     } catch (err) {
       console.error("Error creating listing:", err);
@@ -346,22 +369,20 @@ export default function SellPage() {
             label="Category"
             labelPlacement="outside"
             placeholder="Select a category"
-            selectedKeys={productCategory ? [productCategory] : []}
+            selectedKeys={productCategory ? [productCategory.toString()] : []}
             onSelectionChange={(keys) => {
               const selectedValue = Array.from(keys)[0] as string;
-              setProductCategory(selectedValue || "");
+              setProductCategory(selectedValue ? parseInt(selectedValue) : null);
             }}
             isRequired
             isDisabled={isLoading}
             className="w-full"
           >
-            <SelectItem key="Electronics">Electronics</SelectItem>
-            <SelectItem key="Fashion">Fashion</SelectItem>
-            <SelectItem key="Home & Furniture">Home & Furniture</SelectItem>
-            <SelectItem key="Books">Books</SelectItem>
-            <SelectItem key="Sports & Outdoors">Sports & Outdoors</SelectItem>
-            <SelectItem key="Beauty & Personal Care">Beauty & Personal Care</SelectItem>
-            <SelectItem key="Other">Other</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category.id.toString()}>
+                {category.name}
+              </SelectItem>
+            ))}
           </Select>
 
           {/* Product Condition */}
@@ -432,6 +453,14 @@ export default function SellPage() {
             Cancel
           </Button>
         </div>
+        {success && (
+          <Alert
+            title="Success"
+            description="Listing created successfully!"
+            color="success"
+            className="mt-4"
+          />
+        )}
       </form>
     </div>
   );

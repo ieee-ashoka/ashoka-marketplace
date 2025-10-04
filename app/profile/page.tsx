@@ -31,6 +31,11 @@ import ProfileCard from "@/components/ProfileCard";
 // Use types from the database schema
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type Listing = Database["public"]["Tables"]["listings"]["Row"];
+
+// Enhanced listing type with category details
+type ListingWithCategory = Listing & {
+  categories?: Database["public"]["Tables"]["categories"]["Row"] | null;
+}
 // type Wishlist = Database["public"]["Tables"]["wishlist"]["Row"];
 
 // Initialize Supabase client
@@ -39,8 +44,8 @@ const supabase = createClient();
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [myListings, setMyListings] = useState<Listing[]>([]);
-  const [wishlist, setWishlist] = useState<Listing[]>([]);
+  const [myListings, setMyListings] = useState<ListingWithCategory[]>([]);
+  const [wishlist, setWishlist] = useState<ListingWithCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("listings");
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -71,10 +76,20 @@ export default function ProfilePage() {
             .select("*")
             .eq("user_id", userId)
             .single(),
-          // Fetch user's listings
+          // Fetch user's listings with category details
           supabase
             .from("listings")
-            .select("*")
+            .select(`
+              *,
+              categories (
+                id,
+                name,
+                key,
+                icon,
+                color,
+                iconColor
+              )
+            `)
             .eq("user_id", userId)
             .order("created_at", { ascending: false }),
           // Fetch wishlist entries to get listing_ids
@@ -105,10 +120,20 @@ export default function ProfilePage() {
           if (listingIds.length === 0) {
             setWishlist([]);
           } else {
-            // Fetch the actual listing data for items in wishlist
+            // Fetch the actual listing data for items in wishlist with category details
             const { data: wishlistListings, error: wishlistListingsError } = await supabase
               .from("listings")
-              .select("*")
+              .select(`
+                *,
+                categories (
+                  id,
+                  name,
+                  key,
+                  icon,
+                  color,
+                  iconColor
+                )
+              `)
               .in("id", listingIds);
 
             if (wishlistListingsError) throw wishlistListingsError;

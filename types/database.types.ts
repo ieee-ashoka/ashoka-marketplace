@@ -39,9 +39,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          icon: string | null
+          iconColor: string | null
+          id: number
+          key: string | null
+          name: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          iconColor?: string | null
+          id?: number
+          key?: string | null
+          name?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          iconColor?: string | null
+          id?: number
+          key?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
       listings: {
         Row: {
-          category: string | null
+          category: number
           condition: string | null
           created_at: string
           description: string | null
@@ -54,7 +84,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          category?: string | null
+          category: number
           condition?: string | null
           created_at?: string
           description?: string | null
@@ -67,7 +97,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          category?: string | null
+          category?: number
           condition?: string | null
           created_at?: string
           description?: string | null
@@ -79,7 +109,15 @@ export type Database = {
           productAge?: number | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "listings_category_fkey"
+            columns: ["category"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

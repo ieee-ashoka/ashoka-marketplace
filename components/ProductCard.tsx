@@ -6,10 +6,15 @@ import Link from "next/link";
 import { Tables } from "@/types/database.types";
 import { formatDistanceToNow } from "date-fns";
 
+// Enhanced product type that can handle both old and new category formats
+interface ProductWithCategory extends Tables<"listings"> {
+  categories?: Tables<"categories"> | null;
+}
+
 type ProductCardProps = React.HTMLAttributes<HTMLDivElement> & {
   isActive?: boolean;
   showActive?: boolean;
-  product: Tables<"listings">;
+  product: ProductWithCategory;
   actions?: React.ReactNode; // New prop for custom actions
 };
 
@@ -108,7 +113,7 @@ export default function ProductCard({ isActive, showActive, product, className, 
           <span>{postedDate || "Recently"}</span>
         </div>
 
-        {product.category && (
+        {(product.categories?.name || (typeof product.category === 'string' && product.category)) && (
           <div className="mt-2">
             <Chip
               className="text-xs dark:text-white"
@@ -116,7 +121,7 @@ export default function ProductCard({ isActive, showActive, product, className, 
               variant="faded"
               size="md"
             >
-              {product.category}
+              {product.categories?.name || product.category}
             </Chip>
           </div>
         )}
@@ -128,7 +133,7 @@ export default function ProductCard({ isActive, showActive, product, className, 
         ) : (
           <Button
             as={Link}
-            href={`/item/${product.id}`}
+            href={`/listing/${product.id}`}
             className="w-full min-h-[36px] text-sm sm:text-base"
             color="primary"
             variant="flat"

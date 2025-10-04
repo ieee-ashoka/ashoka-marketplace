@@ -37,11 +37,11 @@ import {
   getSimilarListings,
   addToWishlist,
   removeFromWishlist,
-  isListingActive
+  isListingActive,
+  ListingWithCategory
 } from "./helpers";
 
 // Use types from the database schema
-type Listing = Database["public"]["Tables"]["listings"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 export default function ListingPage() {
@@ -49,13 +49,13 @@ export default function ListingPage() {
   const params = useParams();
   const listingId = params.id as string;
 
-  const [listing, setListing] = useState<Listing | null>(null);
+  const [listing, setListing] = useState<ListingWithCategory | null>(null);
   const [seller, setSeller] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
-  const [similarListings, setSimilarListings] = useState<Listing[]>([]);
+  const [similarListings, setSimilarListings] = useState<ListingWithCategory[]>([]);
   const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
 
   useEffect(() => {
@@ -69,7 +69,7 @@ export default function ListingPage() {
 
         // Fetch listing details
         const listingData = await getListingById(listingId);
-        
+
         if (!listingData) {
           router.push("/");
           return;
@@ -107,12 +107,12 @@ export default function ListingPage() {
   // Toggle wishlist function
   async function toggleWishlist() {
     if (!currentUser || !listing) return;
-    
+
     setIsAddingToWishlist(true);
-    
+
     try {
       let success;
-      
+
       if (isInWishlist) {
         // Remove from wishlist
         success = await removeFromWishlist(currentUser.id, listing.id);
@@ -120,7 +120,7 @@ export default function ListingPage() {
         // Add to wishlist
         success = await addToWishlist(currentUser.id, listing.id);
       }
-      
+
       // Update state if operation was successful
       if (success) {
         setIsInWishlist(!isInWishlist);
@@ -145,16 +145,16 @@ export default function ListingPage() {
               ))}
             </div>
           </div>
-          
+
           <div className="w-full md:w-5/12">
             <Skeleton className="h-10 w-3/4 rounded-lg mb-4" />
             <Skeleton className="h-8 w-1/3 rounded-lg mb-4" />
             <Skeleton className="h-6 w-full rounded-lg mb-4" />
             <Skeleton className="h-6 w-full rounded-lg mb-4" />
             <Skeleton className="h-6 w-3/4 rounded-lg mb-8" />
-            
+
             <Skeleton className="h-12 rounded-lg mb-4" />
-            
+
             <div className="mt-8">
               <Skeleton className="h-16 rounded-lg" />
             </div>
@@ -181,8 +181,8 @@ export default function ListingPage() {
 
   const isActive = isListingActive(listing);
   const placeholderImage = "/images/placeholder-image.png";
-  const listingImages = listing.image && listing.image.length > 0 
-    ? listing.image 
+  const listingImages = listing.image && listing.image.length > 0
+    ? listing.image
     : [placeholderImage];
 
   return (
@@ -195,10 +195,10 @@ export default function ListingPage() {
           Back to browsing
         </Link>
         <span className="mx-2">•</span>
-        {listing.category && (
+        {listing.categories && (
           <>
-            <Link href={`/category/${listing.category.toLowerCase()}`} className="hover:text-indigo-600 dark:hover:text-indigo-400">
-              {listing.category}
+            <Link href={`/category/${listing.categories.key || listing.categories.name?.toLowerCase()}`} className="hover:text-indigo-600 dark:hover:text-indigo-400">
+              {listing.categories.name}
             </Link>
             <span className="mx-2">•</span>
           </>
@@ -230,9 +230,9 @@ export default function ListingPage() {
 
               {/* Condition badge */}
               {listing.condition && (
-                <Chip 
-                  className="absolute top-3 left-3" 
-                  color="secondary" 
+                <Chip
+                  className="absolute top-3 left-3"
+                  color="secondary"
                   variant="shadow"
                 >
                   {listing.condition}
@@ -247,11 +247,10 @@ export default function ListingPage() {
                   <button
                     key={index}
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`relative aspect-square overflow-hidden rounded-md hover:opacity-90 ${
-                      selectedImageIndex === index
+                    className={`relative aspect-square overflow-hidden rounded-md hover:opacity-90 ${selectedImageIndex === index
                         ? "ring-2 ring-indigo-600 dark:ring-indigo-400"
                         : "opacity-70"
-                    }`}
+                      }`}
                   >
                     <Image
                       src={img}
@@ -267,12 +266,12 @@ export default function ListingPage() {
 
           {/* Mobile: Action Buttons */}
           <div className="flex mt-4 gap-2 lg:hidden">
-            <Button 
-              className="flex-1" 
-              color="secondary" 
+            <Button
+              className="flex-1"
+              color="secondary"
               variant="flat"
               isDisabled={!isActive}
-              as={Link} 
+              as={Link}
               href={`/message?listing=${listing.id}`}
               startContent={<MessageCircle size={18} />}
             >
@@ -336,10 +335,10 @@ export default function ListingPage() {
 
           {/* Product Metadata */}
           <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm mb-6">
-            {listing.category && (
+            {listing.categories && (
               <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                 <Tag size={16} />
-                <span>Category: <span className="font-medium text-foreground">{listing.category}</span></span>
+                <span>Category: <span className="font-medium text-foreground">{listing.categories.name}</span></span>
               </div>
             )}
             {listing.condition && (
@@ -370,12 +369,12 @@ export default function ListingPage() {
 
           {/* Desktop: Action Buttons */}
           <div className="hidden lg:flex gap-2 mb-6">
-            <Button 
-              className="flex-1" 
-              color="secondary" 
+            <Button
+              className="flex-1"
+              color="secondary"
               size="lg"
               isDisabled={!isActive}
-              as={Link} 
+              as={Link}
               href={`/message?listing=${listing.id}`}
               startContent={<MessageCircle size={20} />}
             >
@@ -461,11 +460,11 @@ export default function ListingPage() {
 
           {/* Report Button */}
           <div className="text-center">
-            <Button 
-              variant="light" 
-              color="danger" 
-              size="sm" 
-              as={Link} 
+            <Button
+              variant="light"
+              color="danger"
+              size="sm"
+              as={Link}
               href={`/report?listing=${listing.id}`}
               startContent={<Flag size={16} />}
               className="text-xs"

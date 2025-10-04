@@ -4,6 +4,11 @@ import { Database } from "@/types/database.types";
 // Type definitions based on your database schema
 type Listing = Database["public"]["Tables"]["listings"]["Row"];
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+
+// Enhanced listing type with category details
+export interface ListingWithCategory extends Listing {
+  categories?: Database["public"]["Tables"]["categories"]["Row"] | null;
+}
 // type Wishlist = Database["public"]["Tables"]["wishlist"]["Row"];
 // type User = { id: string };
 
@@ -25,16 +30,28 @@ export async function getCurrentUser() {
 }
 
 /**
- * Fetch a listing by ID
+ * Fetch a listing by ID with category details
  */
 export async function getListingById(
   listingId: string | number
-): Promise<Listing | null> {
+): Promise<ListingWithCategory | null> {
   const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
 
   const { data, error } = await supabase
     .from("listings")
-    .select("*")
+    .select(
+      `
+      *,
+      categories (
+        id,
+        name,
+        key,
+        icon,
+        color,
+        iconColor
+      )
+    `
+    )
     .eq("id", id)
     .single();
 
@@ -92,15 +109,28 @@ export async function getSellerProfile(
  * Get similar listings by category
  */
 export async function getSimilarListings(
-  category: string,
+  categoryId: number,
   currentListingId: number,
   limit = 4
-): Promise<Listing[]> {
+): Promise<ListingWithCategory[]> {
   const { data, error } = await supabase
     .from("listings")
-    .select("*")
-    .eq("category", category)
+    .select(
+      `
+      *,
+      categories (
+        id,
+        name,
+        key,
+        icon,
+        color,
+        iconColor
+      )
+    `
+    )
+    .eq("category", categoryId)
     .neq("id", currentListingId)
+    .not("expired_at", "lt", new Date().toISOString())
     .limit(limit);
 
   if (error) {

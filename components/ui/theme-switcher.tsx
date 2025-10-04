@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useRef } from "react"
+import { useCallback, useRef, useState, useEffect } from "react"
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import { flushSync } from "react-dom"
@@ -14,6 +14,12 @@ type Props = {
 export const AnimatedThemeToggler = ({ className }: Props) => {
     const { setTheme, resolvedTheme } = useTheme()
     const buttonRef = useRef<HTMLButtonElement>(null)
+    const [mounted, setMounted] = useState(false)
+
+    // Ensure component is mounted before showing theme-dependent content
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     // Determine if current theme is dark
     const isDark = resolvedTheme === "dark"
@@ -58,6 +64,19 @@ export const AnimatedThemeToggler = ({ className }: Props) => {
             }
         )
     }, [isDark, setTheme])
+
+    // Don't render theme-dependent content until the component is mounted and theme is resolved
+    if (!mounted || !resolvedTheme) {
+        return (
+            <button
+                className={cn(className)}
+                aria-label="Toggle theme"
+                disabled
+            >
+                <Sun size={20} />
+            </button>
+        )
+    }
 
     return (
         <button
