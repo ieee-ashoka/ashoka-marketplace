@@ -77,11 +77,11 @@ export default function AppNavbar() {
   ];
 
   return (
-    <Navbar maxWidth="xl" isBlurred className="hidden md:flex backdrop-blur-[8px]">
+    <Navbar maxWidth="xl" isBlurred className="hidden md:flex backdrop-blur-[24px]">
       <NavbarContent>
         <NavbarBrand>
           <Link href="/" className="flex items-center">
-            <p className="font-bold text-indigo-600 text-xl">
+            <p className="font-bold text-indigo-400 text-xl">
               Ashoka Marketplace
             </p>
           </Link>
@@ -97,9 +97,10 @@ export default function AppNavbar() {
               input: "text-small",
               inputWrapper: "h-full rounded-full px-2",
             }}
+            style={{ "fontWeight": "600" }}
             placeholder="Search items..."
             size="sm"
-            startContent={<Search className="text-gray-400 dark:text-gray-300" size={18} />}
+            startContent={<Search className="text-gray-400 dark:text-gray-300" size={18} style={{ 'paddingLeft': '4px' }} />}
             type="search"
           />
         </NavbarItem>
@@ -165,13 +166,15 @@ export default function AppNavbar() {
               href="/login"
               color="primary"
               variant="flat"
-              className="bg-indigo-600 text-white hover:bg-indigo-700"
+              className="bg-indigo-500 text-white hover:bg-indigo-600"
+              style={{ 'fontWeight': 'bold' }}
               startContent={
                 <Image
                   src="/images/google.png"
                   alt="Sign Up"
                   width={20}
                   height={20}
+                  style={{ 'filter': 'brightness(0) invert(1)' }}
                 />
               }
             >
