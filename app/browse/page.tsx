@@ -482,7 +482,7 @@ export default function BrowsePage() {
                                     <>
                                         <div className={
                                             viewMode === "grid"
-                                                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                                                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
                                                 : "flex flex-col gap-4"
                                         }>
                                             {paginatedListings.map((listing) => (

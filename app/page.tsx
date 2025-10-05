@@ -14,10 +14,10 @@ import {
   House,
 } from "lucide-react";
 import ProductCard from "../components/ProductCard";
-import { subDays } from "date-fns";
 import { Tables } from "@/types/database.types";
 import { Button } from "@heroui/react";
 import { createClient } from "@/utils/supabase/client";
+import CategoriesSkeleton from "../components/loading/categories";
 
 // import Image from "next/image";
 
@@ -43,92 +43,94 @@ const iconMap: Record<string, React.ComponentType<IconProps>> = {
   "default": Tag
 };
 
+// Color mapping to ensure Tailwind includes these classes
+const colorClassMap: Record<string, { bg: string; text: string }> = {
+  "blue": {
+    bg: "bg-blue-100 dark:bg-blue-900",
+    text: "text-blue-600 dark:text-blue-400"
+  },
+  "purple": {
+    bg: "bg-purple-100 dark:bg-purple-900",
+    text: "text-purple-600 dark:text-purple-400"
+  },
+  "yellow": {
+    bg: "bg-yellow-100 dark:bg-yellow-900",
+    text: "text-yellow-600 dark:text-yellow-400"
+  },
+  "green": {
+    bg: "bg-green-100 dark:bg-green-900",
+    text: "text-green-600 dark:text-green-400"
+  },
+  "red": {
+    bg: "bg-red-100 dark:bg-red-900",
+    text: "text-red-600 dark:text-red-400"
+  },
+  "orange": {
+    bg: "bg-orange-100 dark:bg-orange-900",
+    text: "text-orange-600 dark:text-orange-400"
+  },
+  "gray": {
+    bg: "bg-gray-100 dark:bg-gray-900",
+    text: "text-gray-600 dark:text-gray-400"
+  }
+};
+
 export default function Home() {
   const [categories, setCategories] = useState<Tables<"categories">[]>([]);
-  // const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [featuredListings, setFeaturedListings] = useState<(Tables<"listings"> & { categories: Tables<"categories"> | null })[]>([]);
+  const [listingsLoading, setListingsLoading] = useState(true);
 
-  // Fetch categories from database
+  // Fetch categories and featured listings concurrently
   useEffect(() => {
-    async function fetchCategories() {
+    async function fetchData() {
       try {
         const supabase = createClient();
-        const { data, error } = await supabase
-          .from("categories")
-          .select("*")
-          .order("name")
-          .limit(6); // Show top 6 categories on homepage
 
-        if (error) throw error;
-        setCategories(data || []);
+        const [categoriesResult, listingsResult] = await Promise.all([
+          supabase
+            .from("categories")
+            .select("*")
+            .order("name")
+            .limit(6), // Show top 6 categories on homepage
+
+          supabase
+            .from("listings")
+            .select(`
+              *,
+              categories (
+                *
+              )
+            `)
+            .order("created_at", { ascending: false })
+            .limit(4)
+        ]);
+
+        if (categoriesResult.error) {
+          console.error("Error fetching categories:", categoriesResult.error);
+          setCategories([]);
+        } else {
+          setCategories(categoriesResult.data || []);
+        }
+
+        if (listingsResult.error) {
+          console.error("Error fetching featured listings:", listingsResult.error);
+          setFeaturedListings([]);
+        } else {
+          setFeaturedListings(listingsResult.data || []);
+        }
       } catch (error) {
-        console.error("Error fetching categories:", error);
-        // Fallback to empty array
+        console.error("Error fetching data:", error);
         setCategories([]);
+        setFeaturedListings([]);
       } finally {
-        // setIsLoading(false);
+        setIsLoading(false);
+        setListingsLoading(false);
       }
     }
 
-    fetchCategories();
+    fetchData();
   }, []);
-
-
-  // Transform the featuredListings data to match the product schema
-  const featuredListings: Tables<"listings">[] = [
-    {
-      id: 1,
-      name: "Economics Textbook",
-      price: null,
-      image: ["/images/placeholder-books.jpg"],
-      created_at: subDays(new Date(), 2).toISOString(),
-      category: 1, // Using ID instead of string
-      condition: "Like New",
-      description: null,
-      expired_at: null,
-      user_id: null,
-      productAge: null
-    },
-    {
-      id: 2,
-      name: "Desk Lamp",
-      price: 600,
-      image: null,
-      created_at: subDays(new Date(), 5).toISOString(),
-      category: 2, // Using ID instead of string
-      condition: "Good",
-      description: null,
-      expired_at: null,
-      user_id: null,
-      productAge: null
-    },
-    {
-      id: 3,
-      name: "Portable Speaker",
-      price: 1200,
-      image: ["/placeholder-speaker.jpg"],
-      created_at: subDays(new Date(), 1).toISOString(),
-      category: 3, // Using ID instead of string
-      condition: "Excellent",
-      description: "High quality portable speaker with great bass response",
-      expired_at: null,
-      user_id: null,
-      productAge: null
-    },
-    {
-      id: 4,
-      name: "Room Bookshelf",
-      price: 1500,
-      image: ["/placeholder-shelf.jpg"],
-      created_at: subDays(new Date(), 3).toISOString(),
-      category: 4, // Using ID instead of string
-      condition: null,
-      description:
-        "Sturdy wooden bookshelf, perfect for dorm rooms. Holds up to 50 books.",
-      expired_at: null,
-      user_id: null,
-      productAge: null
-    },
-  ];
 
   return (
     <main className="min-h-screen bg-background">
@@ -181,26 +183,39 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-foreground mb-8 text-center">
             Browse Categories
           </h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            {categories.map((category) => {
-              // Get icon from iconMap or use default
-              const IconComponent = iconMap[category.key?.toLowerCase() || category.name?.toLowerCase() || 'default'] || iconMap.default;
-              return (
-                <Link
-                  key={category.id}
-                  href={`/category/${category.key || category.name?.toLowerCase() || ''}`}
-                  className={`${category.color} rounded-xl p-6 flex flex-col items-center justify-center transition-transform hover:scale-105`}
-                >
-                  <div className={`text-4xl mb-2 ${category.iconColor}`}>
-                    <IconComponent />
-                  </div>
-                  <span className="font-medium text-foreground">
-                    {category.name}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
+          {isLoading ? (
+            <CategoriesSkeleton />
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+              {categories.map((category) => {
+                // Get icon from iconMap or use default
+                const IconComponent = iconMap[category.key?.toLowerCase() || category.name?.toLowerCase() || 'default'] || iconMap.default;
+
+                // Extract color name from database color string (e.g., "bg-blue-100" -> "blue")
+                const colorMatch = category.color?.match(/bg-(\w+)-/);
+                const colorName = colorMatch ? colorMatch[1] : 'gray';
+
+                // Get the mapped classes or fallback to database values
+                const bgClasses = colorClassMap[colorName]?.bg || category.color || 'bg-gray-100 dark:bg-gray-900';
+                const textClasses = colorClassMap[colorName]?.text || category.iconColor || 'text-gray-600 dark:text-gray-400';
+
+                return (
+                  <Link
+                    key={category.id}
+                    href={`/browse?category=${category.key}`}
+                    className={`${bgClasses} rounded-xl p-6 flex flex-col items-center justify-center transition-transform hover:scale-105`}
+                  >
+                    <div className={`text-4xl mb-2 ${textClasses}`}>
+                      <IconComponent />
+                    </div>
+                    <span className="font-medium text-foreground">
+                      {category.name}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
@@ -218,11 +233,29 @@ export default function Home() {
               View all <ChevronRight className="h-5 w-5 ml-1" />
             </Link>
           </div>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {featuredListings.map((item) => (
-              <ProductCard key={item.id} product={item} />
-            ))}
-          </div>
+          {listingsLoading ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {[...Array(4)].map((_, index) => (
+                <div key={index} className="bg-default-100 rounded-lg p-4 animate-pulse">
+                  <div className="h-48 bg-default-200 rounded-lg mb-4"></div>
+                  <div className="h-4 bg-default-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-4 bg-default-200 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {featuredListings.length > 0 ? (
+                featuredListings.map((item) => (
+                  <ProductCard key={item.id} product={item} />
+                ))
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <p className="text-gray-500 dark:text-gray-400">No listings available yet. Be the first to list an item!</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
