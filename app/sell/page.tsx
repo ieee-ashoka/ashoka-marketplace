@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Button, Input, Textarea, Select, SelectItem, Progress, Switch, Alert } from "@heroui/react";
+import { Button, Input, Textarea, Select, SelectItem, Progress, Switch, Alert, SharedSelection } from "@heroui/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { isValidImage } from "@/utils/images/compression";
@@ -242,7 +242,7 @@ export default function SellPage() {
           labelPlacement="outside"
           placeholder="e.g., iPhone 13 Pro Max"
           value={productName}
-          onChange={(e) => setProductName(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductName(e.target.value)}
           isRequired
           isDisabled={isLoading}
           className="w-full"
@@ -319,7 +319,7 @@ export default function SellPage() {
           <div className="flex items-center justify-between mb-10">
             <Switch
               isSelected={priceOnRequest}
-              onValueChange={(value) => {
+              onValueChange={(value: boolean) => {
                 setPriceOnRequest(value);
                 if (value) {
                   setProductPrice("");
@@ -338,7 +338,7 @@ export default function SellPage() {
               labelPlacement="outside"
               placeholder="0.00"
               value={productPrice}
-              onChange={(e) => setProductPrice(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductPrice(e.target.value)}
               isRequired
               min="0"
               step="1"
@@ -355,7 +355,7 @@ export default function SellPage() {
           labelPlacement="outside"
           placeholder="Describe your product..."
           value={productDescription}
-          onChange={(e) => setProductDescription(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductDescription(e.target.value)}
           isDisabled={isLoading}
           minRows={4}
           isRequired
@@ -370,7 +370,7 @@ export default function SellPage() {
             labelPlacement="outside"
             placeholder="Select a category"
             selectedKeys={productCategory ? [productCategory.toString()] : []}
-            onSelectionChange={(keys) => {
+            onSelectionChange={(keys: SharedSelection) => {
               const selectedValue = Array.from(keys)[0] as string;
               setProductCategory(selectedValue ? parseInt(selectedValue) : null);
             }}
@@ -392,7 +392,7 @@ export default function SellPage() {
             labelPlacement="outside"
             placeholder="Select condition"
             selectedKeys={productCondition ? [productCondition] : []}
-            onSelectionChange={(keys) => {
+            onSelectionChange={(keys: SharedSelection) => {
               const selectedValue = Array.from(keys)[0] as string;
               setProductCondition(selectedValue || "");
             }}
@@ -416,7 +416,7 @@ export default function SellPage() {
           labelPlacement="outside"
           placeholder="e.g., 6"
           value={productAge}
-          onChange={(e) => setProductAge(e.target.value)}
+          onChange={(e:React.ChangeEvent<HTMLInputElement>) => setProductAge(e.target.value)}
           min="0"
           isDisabled={isLoading}
           isRequired

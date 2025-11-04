@@ -14,6 +14,12 @@ import {
   Avatar,
   Divider,
   Tooltip,
+  Modal,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+  ModalContent
 } from "@heroui/react";
 import {
   Heart,
@@ -25,6 +31,7 @@ import {
   MapPin,
   Tag,
   Flag,
+  ShoppingBag
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import Link from "next/link";
@@ -40,6 +47,7 @@ import {
   isListingActive,
   ListingWithCategory
 } from "./helpers";
+import { on } from "events";
 
 // Use types from the database schema
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -57,6 +65,8 @@ export default function ListingPage() {
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [similarListings, setSimilarListings] = useState<ListingWithCategory[]>([]);
   const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
+  const {isOpen, onOpen, onOpenChange} = useDisclosure();
+  const [interested, setInterested] = useState(true);
 
   useEffect(() => {
     async function fetchListingData() {
@@ -132,6 +142,17 @@ export default function ListingPage() {
     }
   }
 
+  async function markInterested() {
+    // Add interested flag on DB and increase count
+    // Send email to seller
+    onOpen();
+  }
+
+  async function markNotInterested() {
+    // Vice-verca
+    onOpen();
+  }
+
   // Loading skeleton
   if (isLoading) {
     return (
@@ -186,6 +207,29 @@ export default function ListingPage() {
     : [placeholderImage];
 
   return (
+    <>
+    <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+      <ModalContent>
+        {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">Marked as Interested</ModalHeader>
+              <ModalBody>
+                <p>
+                  Seller has been notified of your interest. They will reach out to you via GChat.
+                </p>
+                <p>
+                  If the product has a price on request, it will be sent to you shortly.
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button color="danger" variant="light" onPress={onClose}>
+                  Close
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+      </ModalContent>
+    </Modal>
     <div className="container mx-auto px-4 py-6 max-w-6xl">
       {/* Rest of the component remains the same */}
       {/* Breadcrumb */}
@@ -238,6 +282,17 @@ export default function ListingPage() {
                   {listing.condition}
                 </Chip>
               )}
+
+              {/* Interested Count */}
+              {/*listing.interested_count && (
+                <Chip
+                  className="absolute top-3 left-3"
+                  color="secondary"
+                  variant="shadow"
+                >
+                  {listing.interested_count} Interested
+                </Chip>
+              )*/}
             </div>
 
             {/* Thumbnail Gallery */}
@@ -271,11 +326,10 @@ export default function ListingPage() {
               color="secondary"
               variant="flat"
               isDisabled={!isActive}
-              as={Link}
-              href={`/message?listing=${listing.id}`}
-              startContent={<MessageCircle size={18} />}
+              onClick={() => {interested ? markInterested() : markNotInterested()}}
+              startContent={<ShoppingBag size={18} />}
             >
-              Contact Seller
+              Interested
             </Button>
             <Button
               isIconOnly
@@ -374,11 +428,10 @@ export default function ListingPage() {
               color="secondary"
               size="lg"
               isDisabled={!isActive}
-              as={Link}
-              href={`/message?listing=${listing.id}`}
-              startContent={<MessageCircle size={20} />}
+              onClick={() => {interested ? markInterested() : markNotInterested()}}
+              startContent={<ShoppingBag size={20} />}
             >
-              Contact Seller
+              Interested
             </Button>
             <Button
               variant="flat"
@@ -488,5 +541,6 @@ export default function ListingPage() {
         </div>
       )}
     </div>
+    </>
   );
 }
