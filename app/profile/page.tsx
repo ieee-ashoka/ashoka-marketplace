@@ -339,7 +339,7 @@ export default function ProfilePage() {
                             isLoading={deletingId === listing.id}
                             isDisabled={deletingId !== null}
                             onPress={() => openDeleteModal(listing)}
-                            className="min-w-0"
+                            className="min-w-0 w-1/2"
                             aria-label="Delete listing"
                           >
                             <Trash2 size={16} />
@@ -394,7 +394,6 @@ export default function ProfilePage() {
                           variant="flat"
                           className="min-w-0 px-2 sm:px-3"
                           onPress={async () => {
-                            // Remove from wishlist functionality
                             try {
                               const {
                                 data: { user },

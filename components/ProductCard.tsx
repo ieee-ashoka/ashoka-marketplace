@@ -106,10 +106,6 @@ export default function ProductCard({ isActive, showActive, product, className, 
         )}
 
         <div className="mt-2 sm:mt-3 flex items-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-          {/* <span className="truncate max-w-[120px]">
-            {product.username || "Anonymous"}
-          </span> */}
-          {/* <span className="mx-1">•</span> */}
           <span>{postedDate || "Recently"}</span>
         </div>
 
