@@ -29,8 +29,8 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Mona Sans", sans-serif !important;
-  /* font-family: "CodecPro-Regular", sans-serif; */
+  /* font-family: "Mona Sans", sans-serif !important; */
+  font-family: "CodecPro-Regular", sans-serif !important;
 }
 
 h1,
@@ -39,13 +39,13 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: "Mona Sans", sans-serif !important;
-  /* font-family: "CodecPro-Regular", sans-serif; */
+  /* font-family: "Mona Sans", sans-serif !important; */
+  font-family: "CodecPro-Regular", sans-serif !important;
 }
 
 p {
-  font-family: "Mona Sans", sans-serif !important;
-  /* font-family: "CodecPro-Regular", sans-serif; */
+  /* font-family: "Mona Sans", sans-serif !important; */
+  font-family: "CodecPro-Regular", sans-serif !important;
 }
 
 ::view-transition-old(root),
