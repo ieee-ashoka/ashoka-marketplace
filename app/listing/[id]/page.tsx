@@ -24,7 +24,6 @@ import {
 import {
   Heart,
   Share2,
-  MessageCircle,
   ChevronLeft,
   Calendar,
   Info,
@@ -47,7 +46,6 @@ import {
   isListingActive,
   ListingWithCategory
 } from "./helpers";
-import { on } from "events";
 
 // Use types from the database schema
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -66,6 +64,7 @@ export default function ListingPage() {
   const [similarListings, setSimilarListings] = useState<ListingWithCategory[]>([]);
   const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [interested, setInterested] = useState(true);
 
   useEffect(() => {
@@ -326,7 +325,13 @@ export default function ListingPage() {
               color="secondary"
               variant="flat"
               isDisabled={!isActive}
-              onClick={() => {interested ? markInterested() : markNotInterested()}}
+              onPress={() => {
+                if (interested) {
+                  markInterested();
+                } else {
+                  markNotInterested();
+                }
+              }}
               startContent={<ShoppingBag size={18} />}
             >
               Interested
@@ -428,7 +433,13 @@ export default function ListingPage() {
               color="secondary"
               size="lg"
               isDisabled={!isActive}
-              onClick={() => {interested ? markInterested() : markNotInterested()}}
+              onPress={() => {
+                if (interested) {
+                  markInterested();
+                } else {
+                  markNotInterested();
+                }
+              }}
               startContent={<ShoppingBag size={20} />}
             >
               Interested
@@ -436,7 +447,7 @@ export default function ListingPage() {
             <Button
               variant="flat"
               color={isInWishlist ? "danger" : "default"}
-              onClick={toggleWishlist}
+              onPress={toggleWishlist}
               isLoading={isAddingToWishlist}
               startContent={<Heart fill={isInWishlist ? "currentColor" : "none"} />}
               size="lg"
