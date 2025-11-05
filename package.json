@@ -39,7 +39,6 @@
     "typescript": "^5.8.2"
   },
   "description": "",
-  "main": "postcss.config.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ieee-ashoka-it/ashoka-marketplace.git"
