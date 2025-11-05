@@ -28,10 +28,12 @@ export default function Login() {
   }, []);
 
   const handleLogin = async () => {
+    const url = `${location.origin}/auth/callback?next=${nextUrl}`;
+    console.log("Redirect URL:", url);
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${location.origin}/auth/callback?next=${nextUrl}`,
+        redirectTo: url,
       },
     });
   };
