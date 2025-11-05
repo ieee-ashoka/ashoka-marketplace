@@ -19,8 +19,6 @@ import { Button } from "@heroui/react";
 import { createClient } from "@/utils/supabase/client";
 import CategoriesSkeleton from "../components/loading/categories";
 
-// import Image from "next/image";
-
 interface IconProps {
   size?: number | string;
   color?: string;
