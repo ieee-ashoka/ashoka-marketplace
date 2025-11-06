@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils"
 
 type Props = {
     className?: string
+    size?: number
 }
 
-export const AnimatedThemeToggler = ({ className }: Props) => {
+export const AnimatedThemeToggler = ({ className, size = 20 }: Props) => {
     const { setTheme, resolvedTheme } = useTheme()
     const buttonRef = useRef<HTMLButtonElement>(null)
     const [mounted, setMounted] = useState(false)
@@ -85,7 +86,7 @@ export const AnimatedThemeToggler = ({ className }: Props) => {
             className={cn(className)}
             aria-label="Toggle theme"
         >
-            {isDark ? <Sun size={20} /> : <Moon size={20} />}
+            {isDark ? <Sun size={size} /> : <Moon size={size} />}
         </button>
     )
 }

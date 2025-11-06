@@ -300,14 +300,6 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <div className="mt-12 text-center">
-            <Link
-              href="/how-it-works"
-              className="text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-500 dark:hover:text-indigo-300"
-            >
-              Learn more about how our marketplace works →
-            </Link>
-          </div>
         </div>
       </section>
 

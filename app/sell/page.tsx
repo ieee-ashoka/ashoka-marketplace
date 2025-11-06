@@ -222,7 +222,7 @@ export default function SellPage() {
   }, [selectedImages]);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
+    <div className="container mx-auto px-4 py-8 mb-10 max-w-2xl">
       <h1 className="text-3xl font-extrabold tracking-wide mb-8">
         Create New Listing
       </h1>
@@ -416,7 +416,7 @@ export default function SellPage() {
           labelPlacement="outside"
           placeholder="e.g., 6"
           value={productAge}
-          onChange={(e:React.ChangeEvent<HTMLInputElement>) => setProductAge(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProductAge(e.target.value)}
           min="0"
           isDisabled={isLoading}
           isRequired
@@ -448,7 +448,8 @@ export default function SellPage() {
             type="button"
             onPress={() => router.back()}
             isDisabled={isLoading}
-            className="px-6 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold py-3 rounded-lg disabled:opacity-50"
+            variant="light"
+            color="danger"
           >
             Cancel
           </Button>

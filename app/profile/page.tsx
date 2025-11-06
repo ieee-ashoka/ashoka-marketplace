@@ -216,7 +216,7 @@ export default function ProfilePage() {
   const reputationScore = 4.8; // You would calculate this from reviews
 
   return (
-    <div className="container bg-background mx-auto px-6 sm:px-4 py-6 sm:py-8 max-w-6xl">
+    <div className="container bg-background mx-auto px-6 sm:px-4 py-6 sm:py-8 mb-10 max-w-6xl">
       {/* Profile Header Card */}
       <ProfileCard
         profile={profile}

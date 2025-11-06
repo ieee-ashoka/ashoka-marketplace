@@ -520,7 +520,7 @@ export default function BrowsePage() {
                 isOpen={isFilterOpen}
                 onOpenChange={onFilterOpenChange}
                 scrollBehavior="inside"
-                size="full"
+                size="4xl"
                 className="md:hidden"
             >
                 <ModalContent>
