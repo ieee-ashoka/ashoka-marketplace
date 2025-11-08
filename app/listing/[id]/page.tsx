@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Database } from "@/types/database.types";
+import { JwtClaims } from "@/types/supabase";
+import { createClient } from "@/utils/supabase/client";
 import {
   Button,
   Card,
@@ -44,8 +46,10 @@ import {
   addToWishlist,
   removeFromWishlist,
   isListingActive,
-  ListingWithCategory
+  ListingWithCategory,
+  handleSend
 } from "./helpers";
+// import { sendEmail } from "./gmail"
 
 // Use types from the database schema
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -63,7 +67,8 @@ export default function ListingPage() {
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [similarListings, setSimilarListings] = useState<ListingWithCategory[]>([]);
   const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
-  const {isOpen, onOpen, onOpenChange} = useDisclosure();
+  const [user, setUser] = useState<JwtClaims | null>(null);
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [interested, setInterested] = useState(true);
 
@@ -142,8 +147,10 @@ export default function ListingPage() {
   }
 
   async function markInterested() {
-    // Add interested flag on DB and increase count
-    // Send email to seller
+    // TODO: Add interested flag on DB and increase count
+    // const supabase = createClient();
+    // const { data: userData } = await supabase.auth.getUser();
+    handleSend(listing?.name, seller?.email);
     onOpen();
   }
 
@@ -207,9 +214,9 @@ export default function ListingPage() {
 
   return (
     <>
-    <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-      <ModalContent>
-        {(onClose) => (
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+        <ModalContent>
+          {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1">Marked as Interested</ModalHeader>
               <ModalBody>
@@ -227,63 +234,63 @@ export default function ListingPage() {
               </ModalFooter>
             </>
           )}
-      </ModalContent>
-    </Modal>
-    <div className="container mx-auto px-4 py-6 max-w-6xl">
-      {/* Rest of the component remains the same */}
-      {/* Breadcrumb */}
-      <div className="mb-4 flex items-center text-sm text-gray-500 dark:text-gray-400">
-        <Link href="/browse" className="flex items-center hover:text-indigo-600 dark:hover:text-indigo-400">
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Back to browsing
-        </Link>
-        <span className="mx-2">•</span>
-        {listing.categories && (
-          <>
-            <Link href={`/category/${listing.categories.key || listing.categories.name?.toLowerCase()}`} className="hover:text-indigo-600 dark:hover:text-indigo-400">
-              {listing.categories.name}
-            </Link>
-            <span className="mx-2">•</span>
-          </>
-        )}
-        <span className="truncate">{listing.name}</span>
-      </div>
+        </ModalContent>
+      </Modal>
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        {/* Rest of the component remains the same */}
+        {/* Breadcrumb */}
+        <div className="mb-4 flex items-center text-sm text-gray-500 dark:text-gray-400">
+          <Link href="/browse" className="flex items-center hover:text-indigo-600 dark:hover:text-indigo-400">
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Back to browsing
+          </Link>
+          <span className="mx-2">•</span>
+          {listing.categories && (
+            <>
+              <Link href={`/category/${listing.categories.key || listing.categories.name?.toLowerCase()}`} className="hover:text-indigo-600 dark:hover:text-indigo-400">
+                {listing.categories.name}
+              </Link>
+              <span className="mx-2">•</span>
+            </>
+          )}
+          <span className="truncate">{listing.name}</span>
+        </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Image Gallery Section */}
-        <div className="w-full lg:w-7/12">
-          <div className="relative">
-            {/* Main Image */}
-            <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
-              <Image
-                src={listingImages[selectedImageIndex]}
-                alt={listing.name || "Product Image"}
-                className="object-cover"
-                radius="md"
-              />
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Image Gallery Section */}
+          <div className="w-full lg:w-7/12">
+            <div className="relative">
+              {/* Main Image */}
+              <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+                <Image
+                  src={listingImages[selectedImageIndex]}
+                  alt={listing.name || "Product Image"}
+                  className="object-cover"
+                  radius="md"
+                />
 
-              {/* Status Badge */}
-              {!isActive && (
-                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                  <Chip size="lg" color="danger" variant="shadow">
-                    This listing has expired
+                {/* Status Badge */}
+                {!isActive && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <Chip size="lg" color="danger" variant="shadow">
+                      This listing has expired
+                    </Chip>
+                  </div>
+                )}
+
+                {/* Condition badge */}
+                {listing.condition && (
+                  <Chip
+                    className="absolute top-3 left-3"
+                    color="secondary"
+                    variant="shadow"
+                  >
+                    {listing.condition}
                   </Chip>
-                </div>
-              )}
+                )}
 
-              {/* Condition badge */}
-              {listing.condition && (
-                <Chip
-                  className="absolute top-3 left-3"
-                  color="secondary"
-                  variant="shadow"
-                >
-                  {listing.condition}
-                </Chip>
-              )}
-
-              {/* Interested Count */}
-              {/*listing.interested_count && (
+                {/* Interested Count */}
+                {/*listing.interested_count && (
                 <Chip
                   className="absolute top-3 left-3"
                   color="secondary"
@@ -292,174 +299,63 @@ export default function ListingPage() {
                   {listing.interested_count} Interested
                 </Chip>
               )*/}
-            </div>
+              </div>
 
-            {/* Thumbnail Gallery */}
-            {listingImages.length > 1 && (
-              <div className="mt-4 grid grid-cols-5 gap-2">
-                {listingImages.map((img, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImageIndex(index)}
-                    className={`relative aspect-square overflow-hidden rounded-md hover:opacity-90 ${selectedImageIndex === index
+              {/* Thumbnail Gallery */}
+              {listingImages.length > 1 && (
+                <div className="mt-4 grid grid-cols-5 gap-2">
+                  {listingImages.map((img, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`relative aspect-square overflow-hidden rounded-md hover:opacity-90 ${selectedImageIndex === index
                         ? "ring-2 ring-indigo-600 dark:ring-indigo-400"
                         : "opacity-70"
-                      }`}
-                  >
-                    <Image
-                      src={img}
-                      alt={`Product image ${index + 1}`}
-                      className="object-cover"
-                      radius="sm"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Mobile: Action Buttons */}
-          <div className="flex mt-4 gap-2 lg:hidden">
-            <Button
-              className="flex-1"
-              color="secondary"
-              variant="flat"
-              isDisabled={!isActive}
-              onPress={() => {
-                if (interested) {
-                  markInterested();
-                } else {
-                  markNotInterested();
-                }
-              }}
-              startContent={<ShoppingBag size={18} />}
-            >
-              Interested
-            </Button>
-            <Button
-              isIconOnly
-              variant="flat"
-              color={isInWishlist ? "danger" : "default"}
-              onPress={toggleWishlist}
-              isLoading={isAddingToWishlist}
-            >
-              <Heart fill={isInWishlist ? "currentColor" : "none"} />
-            </Button>
-            <Button
-              isIconOnly
-              variant="flat"
-              onPress={() => {
-                if (navigator.share) {
-                  navigator.share({
-                    title: listing.name || "Check out this listing",
-                    text: listing.description || "Found this on Ashoka Marketplace",
-                    url: window.location.href,
-                  });
-                } else {
-                  navigator.clipboard.writeText(window.location.href);
-                  // Would add toast notification here
-                }
-              }}
-            >
-              <Share2 />
-            </Button>
-          </div>
-
-          {/* Description Section - Mobile only */}
-          <div className="mt-6 lg:hidden">
-            <h2 className="text-lg font-semibold mb-2">Description</h2>
-            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
-              {listing.description || "No description provided."}
-            </p>
-          </div>
-        </div>
-
-        {/* Rest of the component remains the same... */}
-        {/* Listing Details Section */}
-        <div className="w-full lg:w-5/12">
-          {/* Product Title and Price */}
-          <div className="mb-4">
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              {listing.name || "Unnamed Item"}
-            </h1>
-            <div className="mt-3 flex items-center justify-between">
-              <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                {listing.price ? `₹${listing.price.toLocaleString("en-IN")}` : "Price on request"}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                Listed {formatDistanceToNow(new Date(listing.created_at), { addSuffix: true })}
-              </div>
+                        }`}
+                    >
+                      <Image
+                        src={img}
+                        alt={`Product image ${index + 1}`}
+                        className="object-cover"
+                        radius="sm"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* Product Metadata */}
-          <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm mb-6">
-            {listing.categories && (
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <Tag size={16} />
-                <span>Category: <span className="font-medium text-foreground">{listing.categories.name}</span></span>
-              </div>
-            )}
-            {listing.condition && (
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <Info size={16} />
-                <span>Condition: <span className="font-medium text-foreground">{listing.condition}</span></span>
-              </div>
-            )}
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <Calendar size={16} />
-              <span>Listed on: <span className="font-medium text-foreground">
-                {format(new Date(listing.created_at), 'MMM d, yyyy')}
-              </span></span>
-            </div>
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-              <MapPin size={16} />
-              <span>Location: <span className="font-medium text-foreground">Ashoka University</span></span>
-            </div>
-          </div>
-
-          {/* Desktop: Description Section */}
-          <div className="hidden lg:block mb-6">
-            <h2 className="text-lg font-semibold mb-2">Description</h2>
-            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
-              {listing.description || "No description provided."}
-            </p>
-          </div>
-
-          {/* Desktop: Action Buttons */}
-          <div className="hidden lg:flex gap-2 mb-6">
-            <Button
-              className="flex-1"
-              color="secondary"
-              size="lg"
-              isDisabled={!isActive}
-              onPress={() => {
-                if (interested) {
-                  markInterested();
-                } else {
-                  markNotInterested();
-                }
-              }}
-              startContent={<ShoppingBag size={20} />}
-            >
-              Interested
-            </Button>
-            <Button
-              variant="flat"
-              color={isInWishlist ? "danger" : "default"}
-              onPress={toggleWishlist}
-              isLoading={isAddingToWishlist}
-              startContent={<Heart fill={isInWishlist ? "currentColor" : "none"} />}
-              size="lg"
-            >
-              {isInWishlist ? "Saved" : "Save"}
-            </Button>
-            <Tooltip content="Share listing">
+            {/* Mobile: Action Buttons */}
+            <div className="flex mt-4 gap-2 lg:hidden">
+              <Button
+                className="flex-1"
+                color="secondary"
+                variant="flat"
+                isDisabled={!isActive}
+                onPress={() => {
+                  if (interested) {
+                    markInterested();
+                  } else {
+                    markNotInterested();
+                  }
+                }}
+                startContent={<ShoppingBag size={18} />}
+              >
+                Interested
+              </Button>
               <Button
                 isIconOnly
                 variant="flat"
-                size="lg"
-                onClick={() => {
+                color={isInWishlist ? "danger" : "default"}
+                onPress={toggleWishlist}
+                isLoading={isAddingToWishlist}
+              >
+                <Heart fill={isInWishlist ? "currentColor" : "none"} />
+              </Button>
+              <Button
+                isIconOnly
+                variant="flat"
+                onPress={() => {
                   if (navigator.share) {
                     navigator.share({
                       title: listing.name || "Check out this listing",
@@ -472,86 +368,197 @@ export default function ListingPage() {
                   }
                 }}
               >
-                <Share2 size={20} />
+                <Share2 />
               </Button>
-            </Tooltip>
-          </div>
+            </div>
 
-          {/* Warning if expired */}
-          {!isActive && (
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-4 rounded-lg mb-6">
-              <p className="text-sm">
-                This listing has expired and is no longer available for purchase.
+            {/* Description Section - Mobile only */}
+            <div className="mt-6 lg:hidden">
+              <h2 className="text-lg font-semibold mb-2">Description</h2>
+              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                {listing.description || "No description provided."}
               </p>
             </div>
-          )}
+          </div>
 
-          {/* Seller Info Card */}
-          <Card className="mb-6">
-            <CardHeader className="pb-0 pt-4">
-              <h2 className="text-lg font-semibold">About the Seller</h2>
-            </CardHeader>
-            <CardBody>
-              <div className="flex items-center">
-                <Avatar
-                  src={seller?.avatar || "https://i.pravatar.cc/300"}
-                  name={seller?.name?.charAt(0).toUpperCase() || "U"}
-                  size="md"
-                  className="mr-4"
-                />
-                <div>
-                  <h3 className="font-medium">
-                    {seller?.name || "Ashoka User"}
-                  </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Member since {format(new Date(seller?.created_at || listing.created_at), 'MMM yyyy')}
-                  </p>
+          {/* Rest of the component remains the same... */}
+          {/* Listing Details Section */}
+          <div className="w-full lg:w-5/12">
+            {/* Product Title and Price */}
+            <div className="mb-4">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                {listing.name || "Unnamed Item"}
+              </h1>
+              <div className="mt-3 flex items-center justify-between">
+                <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                  {listing.price ? `₹${listing.price.toLocaleString("en-IN")}` : "Price on request"}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Listed {formatDistanceToNow(new Date(listing.created_at), { addSuffix: true })}
                 </div>
               </div>
-              <div className="mt-4 flex justify-between text-sm">
-                <Button
-                  as={Link}
-                  href={`/profile/${seller?.user_id}`}
-                  variant="flat"
-                  color="secondary"
-                  className="w-full"
-                >
-                  View Profile
-                </Button>
+            </div>
+
+            {/* Product Metadata */}
+            <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm mb-6">
+              {listing.categories && (
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                  <Tag size={16} />
+                  <span>Category: <span className="font-medium text-foreground">{listing.categories.name}</span></span>
+                </div>
+              )}
+              {listing.condition && (
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                  <Info size={16} />
+                  <span>Condition: <span className="font-medium text-foreground">{listing.condition}</span></span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                <Calendar size={16} />
+                <span>Listed on: <span className="font-medium text-foreground">
+                  {format(new Date(listing.created_at), 'MMM d, yyyy')}
+                </span></span>
               </div>
-            </CardBody>
-          </Card>
+              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                <MapPin size={16} />
+                <span>Location: <span className="font-medium text-foreground">Ashoka University</span></span>
+              </div>
+            </div>
 
-          {/* Report Button */}
-          <div className="text-center">
-            <Button
-              variant="light"
-              color="danger"
-              size="sm"
-              as={Link}
-              href={`/report?listing=${listing.id}`}
-              startContent={<Flag size={16} />}
-              className="text-xs"
-            >
-              Report this listing
-            </Button>
+            {/* Desktop: Description Section */}
+            <div className="hidden lg:block mb-6">
+              <h2 className="text-lg font-semibold mb-2">Description</h2>
+              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                {listing.description || "No description provided."}
+              </p>
+            </div>
+
+            {/* Desktop: Action Buttons */}
+            <div className="hidden lg:flex gap-2 mb-6">
+              <Button
+                className="flex-1"
+                color="secondary"
+                size="lg"
+                isDisabled={!isActive}
+                onPress={() => {
+                  if (interested) {
+                    markInterested();
+                  } else {
+                    markNotInterested();
+                  }
+                }}
+                startContent={<ShoppingBag size={20} />}
+              >
+                Interested
+              </Button>
+              <Button
+                variant="flat"
+                color={isInWishlist ? "danger" : "default"}
+                onPress={toggleWishlist}
+                isLoading={isAddingToWishlist}
+                startContent={<Heart fill={isInWishlist ? "currentColor" : "none"} />}
+                size="lg"
+              >
+                {isInWishlist ? "Saved" : "Save"}
+              </Button>
+              <Tooltip content="Share listing">
+                <Button
+                  isIconOnly
+                  variant="flat"
+                  size="lg"
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: listing.name || "Check out this listing",
+                        text: listing.description || "Found this on Ashoka Marketplace",
+                        url: window.location.href,
+                      });
+                    } else {
+                      navigator.clipboard.writeText(window.location.href);
+                      // Would add toast notification here
+                    }
+                  }}
+                >
+                  <Share2 size={20} />
+                </Button>
+              </Tooltip>
+            </div>
+
+            {/* Warning if expired */}
+            {!isActive && (
+              <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-4 rounded-lg mb-6">
+                <p className="text-sm">
+                  This listing has expired and is no longer available for purchase.
+                </p>
+              </div>
+            )}
+
+            {/* Seller Info Card */}
+            <Card className="mb-6">
+              <CardHeader className="pb-0 pt-4">
+                <h2 className="text-lg font-semibold">About the Seller</h2>
+              </CardHeader>
+              <CardBody>
+                <div className="flex items-center">
+                  <Avatar
+                    src={seller?.avatar || "https://i.pravatar.cc/300"}
+                    name={seller?.name?.charAt(0).toUpperCase() || "U"}
+                    size="md"
+                    className="mr-4"
+                  />
+                  <div>
+                    <h3 className="font-medium">
+                      {seller?.name || "Ashoka User"}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Member since {format(new Date(seller?.created_at || listing.created_at), 'MMM yyyy')}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-between text-sm">
+                  <Button
+                    as={Link}
+                    href={`/profile/${seller?.user_id}`}
+                    variant="flat"
+                    color="secondary"
+                    className="w-full"
+                  >
+                    View Profile
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+
+            {/* Report Button */}
+            <div className="text-center">
+              <Button
+                variant="light"
+                color="danger"
+                size="sm"
+                as={Link}
+                href={`/report?listing=${listing.id}`}
+                startContent={<Flag size={16} />}
+                className="text-xs"
+              >
+                Report this listing
+              </Button>
+            </div>
           </div>
         </div>
+
+        {/* Similar Listings */}
+        {similarListings.length > 0 && (
+          <div className="mt-12">
+            <Divider className="mb-6" />
+            <h2 className="text-xl font-bold mb-6">Similar Items</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {similarListings.map((item) => (
+                <ProductCard key={item.id} product={item} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Similar Listings */}
-      {similarListings.length > 0 && (
-        <div className="mt-12">
-          <Divider className="mb-6" />
-          <h2 className="text-xl font-bold mb-6">Similar Items</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {similarListings.map((item) => (
-              <ProductCard key={item.id} product={item} />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
     </>
   );
 }
