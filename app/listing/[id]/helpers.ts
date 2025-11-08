@@ -206,10 +206,8 @@ export async function isInterested(listingId: string | number, userId: string): 
 
   const interested = data?.interested || [];
   if (interested.includes(userId)) {
-    console.log("User is interested");
     return true;
   } else {
-    console.log("User is not interested");
     return false;
   }
 }
@@ -234,8 +232,6 @@ export async function getInterestedCount(listingId: string | number): Promise<nu
 export async function addInterestedUser(listingId: string | number, userId: string): Promise<boolean> {
   const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
 
-  console.log("Adding interested user:", userId, "to listing:", id);
-
   const { data, error } = await supabase
     .from("interested")
     .select()
@@ -247,11 +243,9 @@ export async function addInterestedUser(listingId: string | number, userId: stri
     return false;
   }
 
-  console.log("Current listing data:", data);
   const interested = data?.interested || [];
-  console.log("Current interested users:", interested);
+
   if (interested.includes(userId)) {
-    console.log("User already interested:", userId);
     return true; // User already interested
   }
 
@@ -271,8 +265,6 @@ export async function addInterestedUser(listingId: string | number, userId: stri
 export async function removeInterestedUser(listingId: string | number, userId: string): Promise<boolean> {
   const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
 
-  console.log("Removing interested user:", userId, "from listing:", id);
-
   const { data, error } = await supabase
     .from("interested")
     .select()
@@ -285,7 +277,6 @@ export async function removeInterestedUser(listingId: string | number, userId: s
   }
 
   const interested = data?.interested || [];
-  console.log("Current interested users:", interested);
   const updatedInterested = interested.filter((uid: string) => uid !== userId);
 
   const { error: updateError } = await supabase

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Database } from "@/types/database.types";
 import {
@@ -31,9 +31,10 @@ import {
   Tag,
   Flag,
   ShoppingBag,
-  Check
+  Check,
+  Eye
 } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow, format, set } from "date-fns";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import {
@@ -71,6 +72,7 @@ export default function ListingPage() {
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [interested, setInterested] = useState(false);
+  const [interestedCount, setInterestedCount] = useState(0);
 
   useEffect(() => {
     async function fetchListingData() {
@@ -140,6 +142,20 @@ export default function ListingPage() {
       cancelled = true;
     };
   }, [listing?.id, currentUser?.id]);
+
+  useEffect(() => {
+    if (!listing) {
+      setInterestedCount(0);
+      return;
+    }
+
+    const fetchCount = async () => {
+      const count = await getInterestedCount(listing.id);
+      setInterestedCount(count);
+    }
+
+    fetchCount();
+  }, [listing?.id]);
 
   // Toggle wishlist function
   async function toggleWishlist() {
@@ -325,17 +341,6 @@ export default function ListingPage() {
                   {listing.condition}
                 </Chip>
               )}
-
-              {/* Interested Count */}
-              {/*await getInterestedCount(listing.id) && (
-                <Chip
-                  className="absolute top-3 left-3"
-                  color="secondary"
-                  variant="shadow"
-                >
-                  {listing.interested_count} Interested
-                </Chip>
-              )*/}
             </div>
 
             {/* Thumbnail Gallery */}
@@ -454,11 +459,15 @@ export default function ListingPage() {
               <MapPin size={16} />
               <span>Location: <span className="font-medium text-foreground">Ashoka University</span></span>
             </div>
+            <div className="flex items-center justify-center gap-2 text-black dark:text-white col-span-2 pt-6">
+              <Eye size={18} />
+              <span className="text-large">Interested: <span className="text-large font-medium text-foreground">{interestedCount}</span></span>
+            </div>
           </div>
 
           {/* Desktop: Description Section */}
           <div className="hidden lg:block mb-6">
-            <h2 className="text-lg font-semibold mb-2">Description</h2>
+            <h2 className="text-lg font-semibold mb-2 text-foreground">Description</h2>
             <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
               {listing.description || "No description provided."}
             </p>
