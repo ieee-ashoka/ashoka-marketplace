@@ -189,3 +189,114 @@ export function isListingActive(listing: Listing): boolean {
   if (!listing.expired_at) return true;
   return new Date(listing.expired_at) > new Date();
 }
+
+export async function isInterested(listingId: string | number, userId: string): Promise<boolean> {
+  const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
+
+  const { data, error } = await supabase
+    .from("interested")
+    .select()
+    .eq("listing_id", id)
+    .single();
+
+  if (error) {
+    console.error("Error fetching listing:", error);
+    return false;
+  }
+
+  const interested = data?.interested || [];
+  if (interested.includes(userId)) {
+    console.log("User is interested");
+    return true;
+  } else {
+    console.log("User is not interested");
+    return false;
+  }
+}
+
+export async function getInterestedCount(listingId: string | number): Promise<number> {
+  const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
+
+  const { data, error } = await supabase
+    .from("interested")
+    .select()
+    .eq("listing_id", id)
+    .single();
+
+  if (error) {
+    console.error("Error fetching interested count:", error);
+    return 0;
+  }
+
+  return data.interested.length;
+}
+
+export async function addInterestedUser(listingId: string | number, userId: string): Promise<boolean> {
+  const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
+
+  console.log("Adding interested user:", userId, "to listing:", id);
+
+  const { data, error } = await supabase
+    .from("interested")
+    .select()
+    .eq("listing_id", id)
+    .single();
+
+  if (error) {
+    console.error("Error fetching listing:", error);
+    return false;
+  }
+
+  console.log("Current listing data:", data);
+  const interested = data?.interested || [];
+  console.log("Current interested users:", interested);
+  if (interested.includes(userId)) {
+    console.log("User already interested:", userId);
+    return true; // User already interested
+  }
+
+  const { error: updateError } = await supabase
+    .from("interested")
+    .update({ interested: [...interested, userId] })
+    .eq("listing_id", id)
+
+  if (updateError) {
+    console.error("Error updating interested users:", updateError);
+    return false;
+  }
+
+  return true;
+}
+
+export async function removeInterestedUser(listingId: string | number, userId: string): Promise<boolean> {
+  const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
+
+  console.log("Removing interested user:", userId, "from listing:", id);
+
+  const { data, error } = await supabase
+    .from("interested")
+    .select()
+    .eq("listing_id", id)
+    .single();
+
+  if (error) {
+    console.error("Error fetching listing:", error);
+    return false;
+  }
+
+  const interested = data?.interested || [];
+  console.log("Current interested users:", interested);
+  const updatedInterested = interested.filter((uid: string) => uid !== userId);
+
+  const { error: updateError } = await supabase
+    .from("interested")
+    .update({ interested: updatedInterested })
+    .eq("listing_id", id);
+
+  if (updateError) {
+    console.error("Error updating interested users:", updateError);
+    return false;
+  }
+
+  return true;
+}

@@ -30,7 +30,8 @@ import {
   MapPin,
   Tag,
   Flag,
-  ShoppingBag
+  ShoppingBag,
+  Check
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import Link from "next/link";
@@ -44,7 +45,11 @@ import {
   addToWishlist,
   removeFromWishlist,
   isListingActive,
-  ListingWithCategory
+  ListingWithCategory,
+  isInterested,
+  getInterestedCount,
+  addInterestedUser,
+  removeInterestedUser
 } from "./helpers";
 
 // Use types from the database schema
@@ -65,7 +70,7 @@ export default function ListingPage() {
   const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [interested, setInterested] = useState(true);
+  const [interested, setInterested] = useState(false);
 
   useEffect(() => {
     async function fetchListingData() {
@@ -113,6 +118,29 @@ export default function ListingPage() {
     fetchListingData();
   }, [listingId, router]);
 
+    useEffect(() => {
+    if (!listing || !currentUser) {
+      setInterested(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const value = await isInterested(listing.id, currentUser.id);
+        if (!cancelled) setInterested(!!value);
+      } catch (err) {
+        console.error("Error checking interest:", err);
+        if (!cancelled) setInterested(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [listing?.id, currentUser?.id]);
+
   // Toggle wishlist function
   async function toggleWishlist() {
     if (!currentUser || !listing) return;
@@ -141,15 +169,31 @@ export default function ListingPage() {
     }
   }
 
-  async function markInterested() {
+  async function toggleInterested() {
     // Add interested flag on DB and increase count
-    // Send email to seller
-    onOpen();
-  }
+    // Send email to seller @Akhilesh
+    if (!currentUser || !listing) return;
+    let success
 
-  async function markNotInterested() {
-    // Vice-verca
-    onOpen();
+    try {
+      console.log(interested);
+      if (!interested) {
+        console.log("Adding interest");
+        success = await addInterestedUser(listing.id, currentUser.id);
+      } else {
+        console.log("Removing interest");
+        success = await removeInterestedUser(listing.id, currentUser.id);
+      }
+    } catch (error) {
+      console.error("Error marking interest:", error);
+    } finally {
+      if (success) {
+        onOpen();
+        setInterested((prev) => !prev);
+      } else {
+        alert("Could not update your interest. Please try again.")
+      };
+    }
   }
 
   // Loading skeleton
@@ -283,7 +327,7 @@ export default function ListingPage() {
               )}
 
               {/* Interested Count */}
-              {/*listing.interested_count && (
+              {/*await getInterestedCount(listing.id) && (
                 <Chip
                   className="absolute top-3 left-3"
                   color="secondary"
@@ -322,19 +366,13 @@ export default function ListingPage() {
           <div className="flex mt-4 gap-2 lg:hidden">
             <Button
               className="flex-1"
-              color="secondary"
+              color={interested ? 'success' : 'secondary'}
               variant="flat"
               isDisabled={!isActive}
-              onPress={() => {
-                if (interested) {
-                  markInterested();
-                } else {
-                  markNotInterested();
-                }
-              }}
-              startContent={<ShoppingBag size={18} />}
+              onPress={toggleInterested}
+              startContent={interested ? <Check size={18} /> : <ShoppingBag size={18} />}
             >
-              Interested
+              {interested ? "Interested" : "Mark as Interested"}
             </Button>
             <Button
               isIconOnly
@@ -430,19 +468,13 @@ export default function ListingPage() {
           <div className="hidden lg:flex gap-2 mb-6">
             <Button
               className="flex-1"
-              color="secondary"
+              color={interested ? 'success' : 'secondary'}
               size="lg"
               isDisabled={!isActive}
-              onPress={() => {
-                if (interested) {
-                  markInterested();
-                } else {
-                  markNotInterested();
-                }
-              }}
-              startContent={<ShoppingBag size={20} />}
+              onPress={toggleInterested}
+              startContent={interested ? <Check size={18} /> : <ShoppingBag size={18} />}
             >
-              Interested
+              {interested ? "Interested" : "Mark as Interested"}
             </Button>
             <Button
               variant="flat"
