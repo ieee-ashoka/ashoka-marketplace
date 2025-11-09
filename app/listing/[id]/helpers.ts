@@ -33,7 +33,7 @@ export async function getCurrentUser() {
   return data?.claims ? { id: data.claims.sub } : null;
 }
 
-export const handleSend = async (name, seller) => {
+export const handleSend = async (name, seller, notinterested = false) => {
   const supabase = createClient();
   const userdata = await supabase.auth.getUser();
   var data_ = {}
@@ -41,13 +41,15 @@ export const handleSend = async (name, seller) => {
     data_ = {
       to: seller,
       subject: name,
-      who: `${userdata?.data.user.user_metadata.full_name} (${userdata?.data.user.email})`
+      who: `${userdata?.data.user.user_metadata.full_name} (${userdata?.data.user.email})`,
+      notin: notinterested
     };
   } else {
     data_ = {
       to: seller,
       subject: name,
-      who: `ERROR UNKNOWN`
+      who: `ERROR UNKNOWN`,
+      notin: notinterested
     }
     console.error("Not logged in")
     alert("Please log in.")

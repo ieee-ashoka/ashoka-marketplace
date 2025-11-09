@@ -70,7 +70,7 @@ export default function ListingPage() {
   const [user, setUser] = useState<JwtClaims | null>(null);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [interested, setInterested] = useState(true);
+  const [interested, setInterested] = useState(false);
 
   useEffect(() => {
     async function fetchListingData() {
@@ -147,15 +147,14 @@ export default function ListingPage() {
   }
 
   async function markInterested() {
-    // TODO: Add interested flag on DB and increase count
-    // const supabase = createClient();
-    // const { data: userData } = await supabase.auth.getUser();
-    handleSend(listing?.name, seller?.email);
+    // TODO: Track interested on supabase
+    handleSend(listing?.name, seller?.email, false);
     onOpen();
   }
 
   async function markNotInterested() {
     // Vice-verca
+    handleSend(listing?.name, seller?.email, true);
     onOpen();
   }
 
@@ -218,13 +217,13 @@ export default function ListingPage() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1">Marked as Interested</ModalHeader>
+              <ModalHeader className="flex flex-col gap-1">Marked as {!interested ? "not " : ""}Interested</ModalHeader>
               <ModalBody>
                 <p>
-                  Seller has been notified of your interest. They will reach out to you via GChat.
+                  The seller has been notified of your{!interested ? " withdrawal of" : ""} interest. {interested ? "They will reach out to you via email." : ""}
                 </p>
                 <p>
-                  If the product has a price on request, it will be sent to you shortly.
+                  {interested ? "If the product has a price on request, it will be sent to you shortly." : ""}
                 </p>
               </ModalBody>
               <ModalFooter>
@@ -329,19 +328,21 @@ export default function ListingPage() {
             <div className="flex mt-4 gap-2 lg:hidden">
               <Button
                 className="flex-1"
-                color="secondary"
+                color={!interested ? "secondary" : "warning"}
                 variant="flat"
                 isDisabled={!isActive}
                 onPress={() => {
-                  if (interested) {
+                  if (!interested) {
                     markInterested();
+                    setInterested(true);
                   } else {
                     markNotInterested();
+                    setInterested(false);
                   }
                 }}
                 startContent={<ShoppingBag size={18} />}
               >
-                Interested
+                {!interested ? "Mark Interested" : "Mark Not Interested"}
               </Button>
               <Button
                 isIconOnly
@@ -437,19 +438,21 @@ export default function ListingPage() {
             <div className="hidden lg:flex gap-2 mb-6">
               <Button
                 className="flex-1"
-                color="secondary"
+                color={!interested ? "secondary" : "warning"}
                 size="lg"
                 isDisabled={!isActive}
                 onPress={() => {
-                  if (interested) {
+                  if (!interested) {
                     markInterested();
+                    setInterested(true)
                   } else {
                     markNotInterested();
+                    setInterested(false)
                   }
                 }}
                 startContent={<ShoppingBag size={20} />}
               >
-                Interested
+                {!interested ? "Mark Interested" : "Mark Not Interested"}
               </Button>
               <Button
                 variant="flat"

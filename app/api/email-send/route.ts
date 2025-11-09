@@ -6,7 +6,7 @@ const SCOPES = ["https://www.googleapis.com/auth/gmail.send"];
 
 export async function POST(req) {
   try {
-    const { to, subject, who } = await req.json();
+    const { to, subject, who, notin } = await req.json();
     // const who = "someone"
     // Load OAuth2 credentials
     const credentialsPath = path.join(process.cwd(), "app/api/email-send/credentials.json");
@@ -25,11 +25,16 @@ export async function POST(req) {
 
     const gmail = google.gmail({ version: "v1", auth: oAuth2Client });
 
-    const rawMessage = createMessage({
+    const rawMessage = !notin ? createMessage({
       to: `${to}`,
-      from: "me",
+      from: `${who}`,
       subject: `Interest in purchase of ${subject} | Ashoka Marketplace`,
       body: `Greetings from IEEE Ashoka. There's an update on the interest for your listing '${subject}'.\n\n${who} is interested in purchasing it. View more on the listings page.\n\nCiao! 💰🪙 💸 🤑 💳 💶 `
+    }) : createMessage({
+      to: `${to}`,
+      from: `${who}`,
+      subject: `Withdrawal of Interest in purchase of ${subject} | Ashoka Marketplace`,
+      body: `Greetings from IEEE Ashoka. There's an update on the interest for your listing '${subject}'.\n\n${who} is no longer interested in purchasing it. View more on the listings page.\n\nCiao! 💰🪙 💸 🤑 💳 💶 `
     });
 
     const result = await gmail.users.messages.send({
