@@ -5,7 +5,7 @@ import { google } from "googleapis";
 const SCOPES = ["https://www.googleapis.com/auth/gmail.send"];
 
 // Load OAuth client credentials
-const credentials = JSON.parse(fs.readFileSync("credentials.json"));
+const credentials = JSON.parse(fs.readFileSync("credentials.json", "utf8"));
 const { client_secret, client_id, redirect_uris } = credentials.installed || credentials.web;
 const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
 
