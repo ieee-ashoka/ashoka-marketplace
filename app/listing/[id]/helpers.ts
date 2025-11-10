@@ -1,5 +1,9 @@
 import { createClient } from "@/utils/supabase/client";
 import { Database } from "@/types/database.types";
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { google } from "googleapis";
+// import {init, Server, readFile} from "universal-fs";
+
 
 // Type definitions based on your database schema
 type Listing = Database["public"]["Tables"]["listings"]["Row"];
@@ -28,6 +32,36 @@ export async function getCurrentUser() {
 
   return data?.claims ? { id: data.claims.sub } : null;
 }
+
+export const handleSend = async (name, seller, notinterested = false) => {
+  const supabase = createClient();
+  const userdata = await supabase.auth.getUser();
+  var data_ = {}
+  if (userdata != null) {
+    data_ = {
+      to: seller,
+      subject: name,
+      who: `${userdata?.data.user.user_metadata.full_name} (${userdata?.data.user.email})`,
+      notin: notinterested
+    };
+  } else {
+    data_ = {
+      to: seller,
+      subject: name,
+      who: `ERROR UNKNOWN`,
+      notin: notinterested
+    }
+    console.error("Not logged in")
+    alert("Please log in.")
+  }
+  const res = await fetch("/api/email-send", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data_)
+  });
+  const data = await res.json();
+  console.log(data.success ? "Email sent!" : `Error: ${data.error}`);
+};
+
 
 /**
  * Fetch a listing by ID with category details
