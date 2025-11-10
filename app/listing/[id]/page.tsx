@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Database } from "@/types/database.types";
 import { JwtClaims } from "@/types/supabase";
@@ -32,9 +32,11 @@ import {
   MapPin,
   Tag,
   Flag,
-  ShoppingBag
+  ShoppingBag,
+  Check,
+  Eye
 } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow, format, set } from "date-fns";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import {
@@ -117,6 +119,43 @@ export default function ListingPage() {
 
     fetchListingData();
   }, [listingId, router]);
+
+    useEffect(() => {
+    if (!listing || !currentUser) {
+      setInterested(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const value = await isInterested(listing.id, currentUser.id);
+        if (!cancelled) setInterested(!!value);
+      } catch (err) {
+        console.error("Error checking interest:", err);
+        if (!cancelled) setInterested(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [listing?.id, currentUser?.id]);
+
+  useEffect(() => {
+    if (!listing) {
+      setInterestedCount(0);
+      return;
+    }
+
+    const fetchCount = async () => {
+      const count = await getInterestedCount(listing.id);
+      setInterestedCount(count);
+    }
+
+    fetchCount();
+  }, [listing?.id]);
 
   // Toggle wishlist function
   async function toggleWishlist() {

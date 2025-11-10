@@ -5,6 +5,7 @@ import { Button, Card, CardBody, CardFooter, Image, Chip } from "@heroui/react";
 import Link from "next/link";
 import { Tables } from "@/types/database.types";
 import { formatDistanceToNow } from "date-fns";
+import { createClient } from "@/utils/supabase/client";
 
 // Enhanced product type that can handle both old and new category formats
 interface ProductWithCategory extends Tables<"listings"> {
@@ -19,6 +20,27 @@ type ProductCardProps = React.HTMLAttributes<HTMLDivElement> & {
 };
 
 export default function ProductCard({ isActive, showActive, product, className, actions }: ProductCardProps) {
+  const supabase = createClient();
+  
+    const [interestedCount, setInterestedCount] = React.useState<number>(0);
+  
+  async function getInterestedCount(listingId: string | number): Promise<number> {
+    const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
+
+    const { data, error } = await supabase
+      .from("interested")
+      .select()
+      .eq("listing_id", id)
+      .single();
+
+    if (error) {
+      console.error("Error fetching interested count:", error);
+      return 0;
+    }
+
+    return data.interested.length;
+  }
+
   // Format the price with proper currency symbol
   const formattedPrice = product.price
     ? `₹${product.price.toLocaleString("en-IN")}`
@@ -37,6 +59,16 @@ export default function ProductCard({ isActive, showActive, product, className, 
     product.image && product.image.length > 0
       ? product.image[0]
       : "/images/placeholder-image.png";
+
+  React.useEffect(() => {
+    async function fetchInterestedCount() {
+      const count = await getInterestedCount(product.id);
+      setInterestedCount(count);
+      console.log("Interested count:", count);
+    }
+
+    fetchInterestedCount();
+  }, [product.id]);
 
   return (
     <Card
@@ -109,18 +141,31 @@ export default function ProductCard({ isActive, showActive, product, className, 
           <span>{postedDate || "Recently"}</span>
         </div>
 
-        {(product.categories?.name || (typeof product.category === 'string' && product.category)) && (
-          <div className="mt-2">
+        <div className="flex flex-row items-center justify-between mt-2">
+          {(product.categories?.name || (typeof product.category === 'string' && product.category)) && (
+            <div>
+              <Chip
+                className="text-xs dark:text-white"
+                color="primary"
+                variant="faded"
+                size="md"
+              >
+                {product.categories?.name || product.category}
+              </Chip>
+            </div>
+          )}
+
+          <div>
             <Chip
-              className="text-xs dark:text-white"
-              color="primary"
-              variant="faded"
+              className="text-xs"
+              color="secondary"
+              variant="flat"
               size="md"
             >
-              {product.categories?.name || product.category}
+              {interestedCount} interested
             </Chip>
           </div>
-        )}
+        </div>
       </CardBody>
 
       <CardFooter className="px-3 pb-3 pt-0 sm:px-4 sm:pb-4">
