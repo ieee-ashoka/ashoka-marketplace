@@ -1,10 +1,8 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Database } from "@/types/database.types";
-import { JwtClaims } from "@/types/supabase";
-import { createClient } from "@/utils/supabase/client";
 import {
   Button,
   Card,
@@ -33,10 +31,8 @@ import {
   Tag,
   Flag,
   ShoppingBag,
-  Check,
-  Eye
 } from "lucide-react";
-import { formatDistanceToNow, format, set } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import {
@@ -49,9 +45,10 @@ import {
   removeFromWishlist,
   isListingActive,
   ListingWithCategory,
-  handleSend
+  handleSend,
+  isInterested,
+  getInterestedCount
 } from "./helpers";
-// import { sendEmail } from "./gmail"
 
 // Use types from the database schema
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -69,10 +66,9 @@ export default function ListingPage() {
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [similarListings, setSimilarListings] = useState<ListingWithCategory[]>([]);
   const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
-  const [user, setUser] = useState<JwtClaims | null>(null);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [interested, setInterested] = useState(false);
+  const [interestedCount, setInterestedCount] = useState(0);
 
   useEffect(() => {
     async function fetchListingData() {
@@ -187,13 +183,13 @@ export default function ListingPage() {
 
   async function markInterested() {
     // TODO: Track interested on supabase
-    handleSend(listing?.name, seller?.email, false);
+    handleSend(listing?.name || '', seller?.email || '', false);
     onOpen();
   }
 
   async function markNotInterested() {
     // Vice-verca
-    handleSend(listing?.name, seller?.email, true);
+    handleSend(listing?.name || '', seller?.email || '', true);
     onOpen();
   }
 
@@ -328,15 +324,15 @@ export default function ListingPage() {
                 )}
 
                 {/* Interested Count */}
-                {/*listing.interested_count && (
-                <Chip
-                  className="absolute top-3 left-3"
-                  color="secondary"
-                  variant="shadow"
-                >
-                  {listing.interested_count} Interested
-                </Chip>
-              )*/}
+                {interestedCount > 0 && (
+                  <Chip
+                    className="absolute top-3 right-3"
+                    color="primary"
+                    variant="shadow"
+                  >
+                    {interestedCount} Interested
+                  </Chip>
+                )}
               </div>
 
               {/* Thumbnail Gallery */}

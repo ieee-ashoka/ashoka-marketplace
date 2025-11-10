@@ -3,26 +3,13 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
     Input,
     Button,
-    Select,
-    SelectItem,
-    Slider,
     Card,
     CardBody,
-    CardHeader,
-    Chip,
     Spinner,
     Pagination,
-    Modal,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    useDisclosure,
-    Accordion,
-    AccordionItem,
 } from "@heroui/react";
 import {
     Search,
-    Filter,
     Grid3X3,
     List
 } from "lucide-react";

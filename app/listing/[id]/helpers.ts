@@ -1,9 +1,6 @@
 import { createClient } from "@/utils/supabase/client";
 import { Database } from "@/types/database.types";
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { google } from "googleapis";
 // import {init, Server, readFile} from "universal-fs";
-
 
 // Type definitions based on your database schema
 type Listing = Database["public"]["Tables"]["listings"]["Row"];
@@ -33,35 +30,39 @@ export async function getCurrentUser() {
   return data?.claims ? { id: data.claims.sub } : null;
 }
 
-export const handleSend = async (name, seller, notinterested = false) => {
+export const handleSend = async (
+  name: string,
+  seller: string,
+  notinterested = false
+) => {
   const supabase = createClient();
   const userdata = await supabase.auth.getUser();
-  var data_ = {}
-  if (userdata != null) {
+  let data_ = {};
+  if (userdata?.data.user) {
     data_ = {
       to: seller,
       subject: name,
-      who: `${userdata?.data.user.user_metadata.full_name} (${userdata?.data.user.email})`,
-      notin: notinterested
+      who: `${userdata.data.user.user_metadata.full_name} (${userdata.data.user.email})`,
+      notin: notinterested,
     };
   } else {
     data_ = {
       to: seller,
       subject: name,
       who: `ERROR UNKNOWN`,
-      notin: notinterested
-    }
-    console.error("Not logged in")
-    alert("Please log in.")
+      notin: notinterested,
+    };
+    console.error("Not logged in");
+    alert("Please log in.");
   }
   const res = await fetch("/api/email-send", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data_)
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data_),
   });
   const data = await res.json();
   console.log(data.success ? "Email sent!" : `Error: ${data.error}`);
 };
-
 
 /**
  * Fetch a listing by ID with category details
@@ -224,7 +225,10 @@ export function isListingActive(listing: Listing): boolean {
   return new Date(listing.expired_at) > new Date();
 }
 
-export async function isInterested(listingId: string | number, userId: string): Promise<boolean> {
+export async function isInterested(
+  listingId: string | number,
+  userId: string
+): Promise<boolean> {
   const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
 
   const { data, error } = await supabase
@@ -246,7 +250,9 @@ export async function isInterested(listingId: string | number, userId: string): 
   }
 }
 
-export async function getInterestedCount(listingId: string | number): Promise<number> {
+export async function getInterestedCount(
+  listingId: string | number
+): Promise<number> {
   const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
 
   const { data, error } = await supabase
@@ -263,7 +269,10 @@ export async function getInterestedCount(listingId: string | number): Promise<nu
   return data.interested.length;
 }
 
-export async function addInterestedUser(listingId: string | number, userId: string): Promise<boolean> {
+export async function addInterestedUser(
+  listingId: string | number,
+  userId: string
+): Promise<boolean> {
   const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
 
   const { data, error } = await supabase
@@ -286,7 +295,7 @@ export async function addInterestedUser(listingId: string | number, userId: stri
   const { error: updateError } = await supabase
     .from("interested")
     .update({ interested: [...interested, userId] })
-    .eq("listing_id", id)
+    .eq("listing_id", id);
 
   if (updateError) {
     console.error("Error updating interested users:", updateError);
@@ -296,7 +305,10 @@ export async function addInterestedUser(listingId: string | number, userId: stri
   return true;
 }
 
-export async function removeInterestedUser(listingId: string | number, userId: string): Promise<boolean> {
+export async function removeInterestedUser(
+  listingId: string | number,
+  userId: string
+): Promise<boolean> {
   const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
 
   const { data, error } = await supabase
