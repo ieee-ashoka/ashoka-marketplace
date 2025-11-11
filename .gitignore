@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+/app/api/email-send/credentials.json
+/app/api/email-send/token.json
 
 # vercel
 .vercel
