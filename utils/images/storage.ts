@@ -1,4 +1,6 @@
-import { createClient } from "@/utils/supabase/client";
+import { R2 } from "@/utils/r2/client";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+
 
 export interface UploadResult {
   success: boolean;
@@ -6,21 +8,19 @@ export interface UploadResult {
   error?: string;
 }
 
-// Helper to extract file path from Supabase storage URL
+// Helper to extract file path from R2 storage URL CDN
 function extractFilePathFromUrl(url: string): string | null {
   try {
-    // Supabase storage URLs typically look like:
-    // https://[project].supabase.co/storage/v1/object/public/profile_images/filename.webp
-    const urlParts = url.split("/");
-    const publicIndex = urlParts.indexOf("public");
+    // Example CDN URL:
+    // https://cdn.ieee-ashoka.in/folder/image.ext
 
-    if (publicIndex !== -1 && publicIndex < urlParts.length - 2) {
-      // Extract the path after 'public/bucket_name/'
-      const pathParts = urlParts.slice(publicIndex + 2);
-      return pathParts.join("/");
-    }
+    const parsedUrl = new URL(url);
+    // Remove the leading slash
+    const path = parsedUrl.pathname.startsWith("/")
+      ? parsedUrl.pathname.slice(1)
+      : parsedUrl.pathname;
 
-    return null;
+    return path || null; // e.g. "uploads/avatar.webp"
   } catch (error) {
     console.error("Error extracting file path from URL:", error);
     return null;
@@ -41,8 +41,6 @@ export async function uploadImage(
   userId: string,
   folder?: string
 ): Promise<UploadResult> {
-  const supabase = createClient();
-
   try {
     // Generate unique filename
     const fileExt = file.name.split(".").pop();
@@ -52,26 +50,19 @@ export async function uploadImage(
     const folderPath = folder ? `${folder}/` : "";
     const fileName = `${folderPath}${userId}/${timestamp}-${randomStr}.${fileExt}`;
 
-    // Upload to storage
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
+    const arrayBuffer = await file.arrayBuffer(); // convert File → ArrayBuffer
+    const body = Buffer.from(arrayBuffer); // convert ArrayBuffer → Buffer
 
-    if (error) {
-      console.error("Error uploading image:", error);
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
+    const cmd = new PutObjectCommand({
+      Bucket: bucket,
+      Key: folder || "listing-images/" + fileName,
+      Body: body,
+      ContentType: file.type,
+    });
 
-    // Get public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(bucket).getPublicUrl(data.path);
+    await R2.send(cmd);
+
+    const publicUrl = `https://pub-aa4bfffdfcf84125803579ef3309d8c5.r2.dev/${folderPath}${fileName}`;
 
     return {
       success: true,
@@ -120,8 +111,6 @@ export async function deleteImage(
   imageUrl: string,
   bucket: string
 ): Promise<boolean> {
-  const supabase = createClient();
-
   try {
     const filePath = extractFilePathFromUrl(imageUrl);
 
@@ -130,12 +119,12 @@ export async function deleteImage(
       return false;
     }
 
-    const { error } = await supabase.storage.from(bucket).remove([filePath]);
+    const cmd = new DeleteObjectCommand({
+      Bucket: bucket,
+      Key: filePath,
+    });
 
-    if (error) {
-      console.error("Error deleting image:", error);
-      return false;
-    }
+    R2.send(cmd);
 
     console.log("Successfully deleted image:", filePath);
     return true;

@@ -127,7 +127,7 @@ export async function uploadMultipleListingImages(
       // Upload the compressed image
       const uploadResult = await uploadImage(
         compressionResult.file,
-        "listing_images",
+        "ashoka-marketplace",
         userId
       );
 
@@ -261,7 +261,7 @@ export async function updateListing(
       // Clean up deleted images
       for (const imageUrl of imagesToDelete) {
         try {
-          await deleteImage(imageUrl, "listing_images");
+          await deleteImage(imageUrl, "ashoka-marketplace");
         } catch (cleanupError) {
           console.error("Failed to cleanup image:", imageUrl, cleanupError);
         }

@@ -194,7 +194,7 @@ export default function SellPage() {
         console.log("Cleaning up uploaded images due to listing creation failure...");
         for (const url of uploadResult.urls) {
           try {
-            await deleteImage(url, "listing_images");
+            await deleteImage(url, "ashoka-marketplace");
           } catch (cleanupError) {
             console.error("Failed to cleanup image:", url, cleanupError);
           }
