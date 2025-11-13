@@ -31,6 +31,7 @@ import {
   Tag,
   Flag,
   ShoppingBag,
+  X
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import Link from "next/link";
@@ -375,7 +376,7 @@ export default function ListingPage() {
                     setInterested(false);
                   }
                 }}
-                startContent={<ShoppingBag size={18} />}
+                startContent={interested ? <X size={18} /> : <ShoppingBag size={18} />}
               >
                 {!interested ? "Mark Interested" : "Mark Not Interested"}
               </Button>
@@ -485,7 +486,7 @@ export default function ListingPage() {
                     setInterested(false)
                   }
                 }}
-                startContent={<ShoppingBag size={20} />}
+                startContent={interested ? <X size={18} /> : <ShoppingBag size={20} />}
               >
                 {!interested ? "Mark Interested" : "Mark Not Interested"}
               </Button>
