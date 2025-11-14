@@ -1,3 +1,5 @@
+"use server"
+
 import { R2 } from "@/utils/r2/client";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
@@ -47,22 +49,22 @@ export async function uploadImage(
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(7);
 
-    const folderPath = folder ? `${folder}/` : "";
-    const fileName = `${folderPath}${userId}/${timestamp}-${randomStr}.${fileExt}`;
+    const folderPath = folder ? `${folder}/${userId}/` : "";
+    const fileName = `${timestamp}-${randomStr}.${fileExt}`;
 
     const arrayBuffer = await file.arrayBuffer(); // convert File → ArrayBuffer
     const body = Buffer.from(arrayBuffer); // convert ArrayBuffer → Buffer
 
     const cmd = new PutObjectCommand({
       Bucket: bucket,
-      Key: folder || "listing-images/" + fileName,
+      Key: folderPath + fileName,
       Body: body,
       ContentType: file.type,
     });
 
     await R2.send(cmd);
 
-    const publicUrl = `https://pub-aa4bfffdfcf84125803579ef3309d8c5.r2.dev/${folderPath}${fileName}`;
+    const publicUrl = `${process.env.STATIC_URL}/${folderPath}${fileName}`;
 
     return {
       success: true,

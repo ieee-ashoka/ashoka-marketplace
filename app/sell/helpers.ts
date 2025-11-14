@@ -186,7 +186,7 @@ export async function uploadListingImage(
       compressionResult.file,
       "ashoka-marketplace",
       userId,
-      "products" // Organize in a products subfolder
+      "listing-images" // Organize in a products subfolder
     );
 
     if (!uploadResult.success) {

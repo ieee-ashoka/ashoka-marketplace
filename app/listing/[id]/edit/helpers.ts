@@ -128,7 +128,8 @@ export async function uploadMultipleListingImages(
       const uploadResult = await uploadImage(
         compressionResult.file,
         "ashoka-marketplace",
-        userId
+        userId,
+        "listing-images"
       );
 
       if (!uploadResult.success || !uploadResult.url) {
