@@ -85,6 +85,9 @@ export default function Home() {
       try {
         const supabase = createClient();
 
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+
         const [categoriesResult, listingsResult] = await Promise.all([
           supabase
             .from("categories")
@@ -101,7 +104,7 @@ export default function Home() {
               )
             `)
             .order("created_at", { ascending: false })
-            .limit(4)
+            .limit(20) // Fetch more to ensure we get 4 after filtering
         ]);
 
         if (categoriesResult.error) {
@@ -115,7 +118,11 @@ export default function Home() {
           console.error("Error fetching featured listings:", listingsResult.error);
           setFeaturedListings([]);
         } else {
-          setFeaturedListings(listingsResult.data || []);
+          // Filter out current user's listings and take only 4
+          const filteredListings = (listingsResult.data || [])
+            .filter(listing => !user || listing.user_id !== user.id)
+            .slice(0, 4);
+          setFeaturedListings(filteredListings);
         }
       } catch (error) {
         console.error("Error fetching data:", error);

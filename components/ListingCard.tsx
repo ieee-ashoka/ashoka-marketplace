@@ -182,7 +182,7 @@ export default function ProductCard({ isActive, showActive, product, className, 
                     color="primary"
                     variant="flat"
                 >
-                    Manage Listing
+                    Edit Listing
                 </Button>
                 <Button
                     onPress={() => { onDelete(); }}

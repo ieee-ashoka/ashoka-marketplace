@@ -31,8 +31,6 @@ import {
   Tag,
   Flag,
   ShoppingBag,
-  Eye,
-  X
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import Link from "next/link";
@@ -49,9 +47,7 @@ import {
   ListingWithCategory,
   handleSend,
   isInterested,
-  getInterestedCount,
-  addInterestedUser,
-  removeInterestedUser
+  getInterestedCount
 } from "./helpers";
 
 // Use types from the database schema
@@ -120,7 +116,7 @@ export default function ListingPage() {
     fetchListingData();
   }, [listingId, router]);
 
-    useEffect(() => {
+  useEffect(() => {
     if (!listing || !currentUser) {
       setInterested(false);
       return;
@@ -186,41 +182,15 @@ export default function ListingPage() {
   }
 
   async function markInterested() {
-    let success
-    try {
-      if (!currentUser || !listing) return;
-      success = await addInterestedUser(listing.id, currentUser.id);
-      handleSend(listing?.name || '', seller?.email || '', false);
-      onOpen();
-    } catch (error) {
-      console.error("Error marking interest:", error);
-    } finally {
-      if (success) {
-        onOpen();
-        setInterested(true);
-      } else {
-        alert("Could not update your interest. Please try again.")
-      };
-    }
+    // TODO: Track interested on supabase
+    handleSend(listing?.name || '', seller?.email || '', false);
+    onOpen();
   }
 
   async function markNotInterested() {
-    let success
-    try {
-      if (!currentUser || !listing) return;
-      success = await removeInterestedUser(listing.id, currentUser.id);
-      handleSend(listing?.name || '', seller?.email || '', true);
-      onOpen();
-    } catch (error) {
-      console.error("Error marking interest:", error);
-    } finally {
-      if (success) {
-        onOpen();
-        setInterested(false);
-      } else {
-        alert("Could not update your interest. Please try again.")
-      };
-    }
+    // Vice-verca
+    handleSend(listing?.name || '', seller?.email || '', true);
+    onOpen();
   }
 
   // Loading skeleton
@@ -276,6 +246,9 @@ export default function ListingPage() {
     ? listing.image
     : [placeholderImage];
 
+  // Check if the current user is the owner of this listing
+  const isOwner = currentUser && listing.user_id === currentUser.id;
+
   return (
     <>
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -323,7 +296,7 @@ export default function ListingPage() {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Image Gallery Section */}
           <div className="w-full lg:w-7/12">
-            <div className="relative" key={`${listing.id}-${interestedCount}`}>
+            <div className="relative">
               {/* Main Image */}
               <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
                 <Image
@@ -350,6 +323,17 @@ export default function ListingPage() {
                     variant="shadow"
                   >
                     {listing.condition}
+                  </Chip>
+                )}
+
+                {/* Interested Count */}
+                {interestedCount > 0 && (
+                  <Chip
+                    className="absolute top-3 right-3"
+                    color="primary"
+                    variant="shadow"
+                  >
+                    {interestedCount} Interested
                   </Chip>
                 )}
               </div>
@@ -379,53 +363,55 @@ export default function ListingPage() {
             </div>
 
             {/* Mobile: Action Buttons */}
-            <div className="flex mt-4 gap-2 lg:hidden">
-              <Button
-                className="flex-1"
-                color={!interested ? "secondary" : "warning"}
-                variant="flat"
-                isDisabled={!isActive}
-                onPress={() => {
-                  if (!interested) {
-                    markInterested();
-                    setInterested(true);
-                  } else {
-                    markNotInterested();
-                    setInterested(false);
-                  }
-                }}
-                startContent={interested ? <X size={18} /> : <ShoppingBag size={18} />}
-              >
-                {!interested ? "Mark Interested" : "Mark Not Interested"}
-              </Button>
-              <Button
-                isIconOnly
-                variant="flat"
-                color={isInWishlist ? "danger" : "default"}
-                onPress={toggleWishlist}
-                isLoading={isAddingToWishlist}
-              >
-                <Heart fill={isInWishlist ? "currentColor" : "none"} />
-              </Button>
-              <Button
-                isIconOnly
-                variant="flat"
-                onPress={() => {
-                  if (navigator.share) {
-                    navigator.share({
-                      title: listing.name || "Check out this listing",
-                      text: listing.description || "Found this on Ashoka Marketplace",
-                      url: window.location.href,
-                    });
-                  } else {
-                    navigator.clipboard.writeText(window.location.href);
-                    // Would add toast notification here
-                  }
-                }}
-              >
-                <Share2 />
-              </Button>
-            </div>
+            {!isOwner && (
+              <div className="flex mt-4 gap-2 lg:hidden">
+                <Button
+                  className="flex-1"
+                  color={!interested ? "secondary" : "warning"}
+                  variant="flat"
+                  isDisabled={!isActive}
+                  onPress={() => {
+                    if (!interested) {
+                      markInterested();
+                      setInterested(true);
+                    } else {
+                      markNotInterested();
+                      setInterested(false);
+                    }
+                  }}
+                  startContent={<ShoppingBag size={18} />}
+                >
+                  {!interested ? "Mark Interested" : "Mark Not Interested"}
+                </Button>
+                <Button
+                  isIconOnly
+                  variant="flat"
+                  color={isInWishlist ? "danger" : "default"}
+                  onPress={toggleWishlist}
+                  isLoading={isAddingToWishlist}
+                >
+                  <Heart fill={isInWishlist ? "currentColor" : "none"} />
+                </Button>
+                <Button
+                  isIconOnly
+                  variant="flat"
+                  onPress={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: listing.name || "Check out this listing",
+                        text: listing.description || "Found this on Ashoka Marketplace",
+                        url: window.location.href,
+                      });
+                    } else {
+                      navigator.clipboard.writeText(window.location.href);
+                      // Would add toast notification here
+                    }
+                  }}
+                >
+                  <Share2 />
+                </Button>
+              </div>
+            )}
 
             {/* Description Section - Mobile only */}
             <div className="mt-6 lg:hidden">
@@ -478,10 +464,6 @@ export default function ListingPage() {
                 <MapPin size={16} />
                 <span>Location: <span className="font-medium text-foreground">Ashoka University</span></span>
               </div>
-              <div className="flex items-center justify-center gap-2 text-black dark:text-white col-span-2 pt-6">
-                <Eye size={18} />
-              <span className="text-large">Interested: <span className="text-large font-medium text-foreground">{interestedCount}</span></span>
-            </div>
             </div>
 
             {/* Desktop: Description Section */}
@@ -492,58 +474,91 @@ export default function ListingPage() {
               </p>
             </div>
 
+            {/* Owner Notice */}
+            {isOwner && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 p-4 rounded-lg mb-6">
+                <p className="text-sm font-medium">
+                  This is your listing - viewing in read-only mode.
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <Button
+                    as={Link}
+                    href={`/listing/${listing.id}/edit`}
+                    size="sm"
+                    color="primary"
+                    variant="flat"
+                  >
+                    Edit Listing
+                  </Button>
+                  {isActive && (
+                    <Button
+                      as={Link}
+                      href={`/listing/${listing.id}/sell`}
+                      size="sm"
+                      color="success"
+                      variant="flat"
+                    >
+                      Mark as Sold
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Desktop: Action Buttons */}
-            <div className="hidden lg:flex gap-2 mb-6">
-              <Button
-                className="flex-1"
-                color={!interested ? "secondary" : "warning"}
-                size="lg"
-                isDisabled={!isActive}
-                onPress={() => {
-                  if (!interested) {
-                    markInterested();
-                    setInterested(true)
-                  } else {
-                    markNotInterested();
-                    setInterested(false)
-                  }
-                }}
-                startContent={interested ? <X size={18} /> : <ShoppingBag size={20} />}
-              >
-                {!interested ? "Mark Interested" : "Mark Not Interested"}
-              </Button>
-              <Button
-                variant="flat"
-                color={isInWishlist ? "danger" : "default"}
-                onPress={toggleWishlist}
-                isLoading={isAddingToWishlist}
-                startContent={<Heart fill={isInWishlist ? "currentColor" : "none"} />}
-                size="lg"
-              >
-                {isInWishlist ? "Saved" : "Save"}
-              </Button>
-              <Tooltip content="Share listing">
+            {!isOwner && (
+              <div className="hidden lg:flex gap-2 mb-6">
                 <Button
-                  isIconOnly
-                  variant="flat"
+                  className="flex-1"
+                  color={!interested ? "secondary" : "warning"}
                   size="lg"
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({
-                        title: listing.name || "Check out this listing",
-                        text: listing.description || "Found this on Ashoka Marketplace",
-                        url: window.location.href,
-                      });
+                  isDisabled={!isActive}
+                  onPress={() => {
+                    if (!interested) {
+                      markInterested();
+                      setInterested(true)
                     } else {
-                      navigator.clipboard.writeText(window.location.href);
-                      // Would add toast notification here
+                      markNotInterested();
+                      setInterested(false)
                     }
                   }}
+                  startContent={<ShoppingBag size={20} />}
                 >
-                  <Share2 size={20} />
+                  {!interested ? "Mark Interested" : "Mark Not Interested"}
                 </Button>
-              </Tooltip>
-            </div>
+                <Button
+                  variant="flat"
+                  color={isInWishlist ? "danger" : "default"}
+                  onPress={toggleWishlist}
+                  isLoading={isAddingToWishlist}
+                  startContent={<Heart fill={isInWishlist ? "currentColor" : "none"} />}
+                  size="lg"
+                >
+                  {isInWishlist ? "Saved" : "Save"}
+                </Button>
+                <Tooltip content="Share listing">
+                  <Button
+                    isIconOnly
+                    variant="flat"
+                    size="lg"
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({
+                          title: listing.name || "Check out this listing",
+                          text: listing.description || "Found this on Ashoka Marketplace",
+                          url: window.location.href,
+                        });
+                      } else {
+                        navigator.clipboard.writeText(window.location.href);
+                        // Would add toast notification here
+                      }
+                    }}
+                  >
+                    <Share2 size={20} />
+                  </Button>
+                </Tooltip>
+              </div>
+            )}
 
             {/* Warning if expired */}
             {!isActive && (
@@ -555,55 +570,59 @@ export default function ListingPage() {
             )}
 
             {/* Seller Info Card */}
-            <Card className="mb-6">
-              <CardHeader className="pb-0 pt-4">
-                <h2 className="text-lg font-semibold">About the Seller</h2>
-              </CardHeader>
-              <CardBody>
-                <div className="flex items-center">
-                  <Avatar
-                    src={seller?.avatar || "https://i.pravatar.cc/300"}
-                    name={seller?.name?.charAt(0).toUpperCase() || "U"}
-                    size="md"
-                    className="mr-4"
-                  />
-                  <div>
-                    <h3 className="font-medium">
-                      {seller?.name || "Ashoka User"}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Member since {format(new Date(seller?.created_at || listing.created_at), 'MMM yyyy')}
-                    </p>
+            {!isOwner && (
+              <Card className="mb-6">
+                <CardHeader className="pb-0 pt-4">
+                  <h2 className="text-lg font-semibold">About the Seller</h2>
+                </CardHeader>
+                <CardBody>
+                  <div className="flex items-center">
+                    <Avatar
+                      src={seller?.avatar || "https://i.pravatar.cc/300"}
+                      name={seller?.name?.charAt(0).toUpperCase() || "U"}
+                      size="md"
+                      className="mr-4"
+                    />
+                    <div>
+                      <h3 className="font-medium">
+                        {seller?.name || "Ashoka User"}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Member since {format(new Date(seller?.created_at || listing.created_at), 'MMM yyyy')}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-4 flex justify-between text-sm">
-                  <Button
-                    as={Link}
-                    href={`/profile/${seller?.user_id}`}
-                    variant="flat"
-                    color="secondary"
-                    className="w-full"
-                  >
-                    View Profile
-                  </Button>
-                </div>
-              </CardBody>
-            </Card>
+                  <div className="mt-4 flex justify-between text-sm">
+                    <Button
+                      as={Link}
+                      href={`/profile/${seller?.user_id}`}
+                      variant="flat"
+                      color="secondary"
+                      className="w-full"
+                    >
+                      View Profile
+                    </Button>
+                  </div>
+                </CardBody>
+              </Card>
+            )}
 
             {/* Report Button */}
-            <div className="text-center">
-              <Button
-                variant="light"
-                color="danger"
-                size="sm"
-                as={Link}
-                href={`/report?listing=${listing.id}`}
-                startContent={<Flag size={16} />}
-                className="text-xs"
-              >
-                Report this listing
-              </Button>
-            </div>
+            {!isOwner && (
+              <div className="text-center">
+                <Button
+                  variant="light"
+                  color="danger"
+                  size="sm"
+                  as={Link}
+                  href={`/report?listing=${listing.id}`}
+                  startContent={<Flag size={16} />}
+                  className="text-xs"
+                >
+                  Report this listing
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 

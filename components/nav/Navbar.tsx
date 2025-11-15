@@ -11,10 +11,11 @@ import {
   DropdownMenu,
   DropdownItem,
   Avatar,
+  Kbd,
 } from "@heroui/react";
 import { Search, User as UserIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatedThemeToggler } from "@/components/ui/theme-switcher";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -23,9 +24,17 @@ import { JwtClaims } from "@/types/supabase";
 
 export default function AppNavbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const supabase = createClient();
   const [user, setUser] = useState<JwtClaims | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  // Handle client-side mounting
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const getUser = async () => {
@@ -63,6 +72,19 @@ export default function AppNavbar() {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
+  // Handle search
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/browse?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
+    }
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+  };
+
   // Dynamic menu items - adjust based on auth status
   const menuItems = [
     { name: "Browse", href: "/browse" },
@@ -89,20 +111,31 @@ export default function AppNavbar() {
       </NavbarContent>
 
       <NavbarContent className="hidden md:flex gap-4" justify="center">
-        <NavbarItem>
-          <Input
-            classNames={{
-              base: "max-w-full sm:max-w-[15rem] h-10",
-              mainWrapper: "h-full",
-              input: "text-small",
-              inputWrapper: "h-full rounded-full px-2",
-            }}
-            style={{ "fontWeight": "600" }}
-            placeholder="Search items..."
-            size="sm"
-            startContent={<Search className="text-gray-400 dark:text-gray-300" size={18} style={{ 'paddingLeft': '4px' }} />}
-            type="search"
-          />
+        <NavbarItem className="w-full max-w-xl">
+          <form onSubmit={handleSearch} className="w-full">
+            <Input
+              classNames={{
+                base: "w-full h-10",
+                mainWrapper: "h-full",
+                input: "text-small",
+                inputWrapper: "h-full rounded-full px-2",
+              }}
+              style={{ "fontWeight": "600" }}
+              placeholder="Search items... (Press Enter)"
+              size="sm"
+              value={searchQuery}
+              onValueChange={handleSearchChange}
+              startContent={<Search className="text-gray-400 dark:text-gray-300" size={18} style={{ 'paddingLeft': '4px' }} />}
+              endContent={
+                mounted && searchQuery && (
+                  <Kbd keys={["enter"]} className="hidden sm:inline-flex">
+                    Enter
+                  </Kbd>
+                )
+              }
+              type="search"
+            />
+          </form>
         </NavbarItem>
         {menuItems.map((item) => (
           <NavbarItem key={item.name} isActive={pathname === item.href}>
