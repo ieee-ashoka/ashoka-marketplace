@@ -11,52 +11,18 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@/utils/supabase/client";
-import { JwtClaims } from "@/types/supabase";
+import { useAuth } from "@/app/context/AuthContext";
 
 const BottomBar = () => {
     const pathname = usePathname();
     const [isVisible, setIsVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [mounted, setMounted] = useState(false);
-    const supabase = createClient();
-    const [user, setUser] = useState<JwtClaims | null>(null);
+    const { user } = useAuth();
 
     useEffect(() => {
         setMounted(true);
     }, []);
-
-    useEffect(() => {
-        const getUser = async () => {
-            try {
-                const { data } = await supabase.auth.getClaims();
-                setUser(data?.claims as JwtClaims | null);
-            } catch (error) {
-                console.error("Error fetching user:", error);
-            }
-        };
-
-        getUser();
-
-        // Set up auth listener
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session) {
-                try {
-                    const { data } = await supabase.auth.getClaims();
-                    setUser(data?.claims as JwtClaims | null);
-                } catch (error) {
-                    console.error("Error fetching user claims:", error);
-                    setUser(null);
-                }
-            } else {
-                setUser(null);
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, [supabase]);
 
     useEffect(() => {
         const handleScroll = () => {

@@ -6,6 +6,7 @@ import Footer from "@/components/nav/Footer";
 import Topbar from "@/components/nav/Topbar";
 import BottomBar from "@/components/nav/Bottombar";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
+import { AuthProvider } from "./context/AuthContext";
 
 export const metadata: Metadata = {
   title: {
@@ -91,14 +92,16 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
         <Providers>
-          <main className="flex min-h-screen flex-col bg-background">
-            <InstallPrompt />
-            <Topbar />
-            <Navbar />
-            {children}
-            <Footer />
-            <BottomBar />
-          </main>
+          <AuthProvider>
+            <main className="flex min-h-screen flex-col bg-background">
+              <InstallPrompt />
+              <Topbar />
+              <Navbar />
+              {children}
+              <Footer />
+              <BottomBar />
+            </main>
+          </AuthProvider>
         </Providers>
       </body>
     </html>

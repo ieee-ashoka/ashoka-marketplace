@@ -19,15 +19,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatedThemeToggler } from "@/components/ui/theme-switcher";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
-import { JwtClaims } from "@/types/supabase";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function AppNavbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
-  const [user, setUser] = useState<JwtClaims | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
 
@@ -35,42 +32,6 @@ export default function AppNavbar() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    const getUser = async () => {
-      try {
-        const {
-          data,
-        } = await supabase.auth.getClaims();
-        setUser(data?.claims as JwtClaims | null);
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getUser();
-
-    // Set up auth listener
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        try {
-          const { data } = await supabase.auth.getClaims();
-          setUser(data?.claims as JwtClaims | null);
-        } catch (error) {
-          console.error("Error fetching user claims:", error);
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase]);
 
   // Handle search
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -151,7 +112,7 @@ export default function AppNavbar() {
       </NavbarContent>
 
       <NavbarContent justify="end">
-        {loading ? (
+        {authLoading ? (
           <NavbarItem>
             <div className="w-6 h-6 rounded-full border-2 border-t-transparent border-indigo-600 animate-spin"></div>
           </NavbarItem>
