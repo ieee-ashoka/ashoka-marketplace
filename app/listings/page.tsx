@@ -7,6 +7,12 @@ import {
     CardBody,
     Spinner,
     Pagination,
+    useDisclosure,
+    Modal,
+    ModalHeader,
+    ModalContent,
+    ModalFooter,
+    ModalBody
 } from "@heroui/react";
 import {
     Search,
@@ -29,9 +35,48 @@ export default function ListingsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [currentPage, setCurrentPage] = useState(1);
+    const [selectedListingId, setSelectedListingId] = useState<number | null>(null);
+    const { isOpen, onOpen, onOpenChange } = useDisclosure();
+    const [isDeleted, setIsDeleted] = useState(false);
     const itemsPerPage = 12;
 
     const supabase = createClient();
+
+    function deleteListing() {
+      const id = typeof selectedListingId === "string" ? parseInt(selectedListingId) : selectedListingId;
+      if (!id) return;
+
+      (async () => {
+          try {
+          setLoading(true);
+          setIsDeleted(false);
+
+          const { error } = await supabase
+              .from("listings")
+              .delete()
+              .eq("id", id)
+              .single();
+
+          if (error) {
+              console.error("Error deleting listing:", error);
+              setLoading(false);
+              return;
+          }
+
+          setListings((prev) => prev.filter((l) => l.id !== id));
+          setIsDeleted(true)
+          onOpen();
+
+          } catch (err) {
+              console.error("Unexpected error in delete():", err);
+              setLoading(false);
+              return;
+          } finally {
+              setLoading(false);
+          }
+      })();
+    }
+
 
     const fetchListings = useCallback(async () => {
         try {
@@ -61,7 +106,8 @@ export default function ListingsPage() {
                     )
                 `)
                 .eq("user_id", user.id)
-                .not("expired_at", "lt", new Date().toISOString());
+                .not("expired_at", "lt", new Date().toISOString())
+                .not("is_sold", "eq", true);
 
             if (listingsError) throw listingsError;
 
@@ -115,6 +161,32 @@ export default function ListingsPage() {
     };
 
     return (
+      <>
+        <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+          <ModalContent>
+            {(onClose) => (
+              <>
+                <ModalHeader className="flex flex-col gap-1">{isDeleted ? "Listing Deleted" : "Delete Listing?"}</ModalHeader>
+                <ModalBody>
+                  <p>
+                    {!isDeleted ? "This action will remove the listing from the marketplace." : "The listing has been sucessfully deleted."}
+                  </p>
+                  {!isDeleted && <p>
+                    Deleting this listing is permanent and cannot be undone. Are you sure you want to proceed?
+                  </p>}
+                </ModalBody>
+                <ModalFooter>
+                  <Button color="primary" onPress={() => {onClose();}}>
+                    Close
+                  </Button>
+                  {!isDeleted && <Button color="danger" onPress={() => {deleteListing(); onClose();}}>
+                    Delete
+                  </Button>}
+                </ModalFooter>
+              </>
+            )}
+          </ModalContent>
+        </Modal>
         <div className="min-h-screen bg-background">
             {/* Header */}
             <div className="bg-content1 border-b border-divider sticky top-0 z-40">
@@ -205,6 +277,7 @@ export default function ListingsPage() {
                                                 <ListingCard
                                                     key={listing.id}
                                                     product={listing}
+                                                    onDelete={() => { setSelectedListingId(listing.id); onOpen(); }}
                                                     className={viewMode === "list" ? "flex-row" : ""}
                                                 />
                                             ))}
@@ -231,5 +304,6 @@ export default function ListingsPage() {
                 </div>
             </div>
         </div>
+      </>
     );
 }

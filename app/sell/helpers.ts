@@ -184,9 +184,9 @@ export async function uploadListingImage(
     // Step 6: Upload the compressed image to Supabase storage
     const uploadResult = await uploadImage(
       compressionResult.file,
-      "listing_images",
+      "ashoka-marketplace",
       userId,
-      "products" // Organize in a products subfolder
+      "listing-images" // Organize in a products subfolder
     );
 
     if (!uploadResult.success) {

@@ -16,6 +16,7 @@ import {
     ModalContent,
     ModalHeader,
     ModalBody,
+    ModalFooter,
     useDisclosure,
     Accordion,
     AccordionItem,
@@ -29,6 +30,7 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import BuyerProfileCard from "@/components/BuyerProfileCard";
 import { useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
     isListingOwnerAndListingExists
 } from "./helpers";
@@ -44,9 +46,13 @@ export default function ListingsPage() {
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [currentPage, setCurrentPage] = useState(1);
     const [name, setName] = useState<string | null>(null);
+    const { isOpen, onOpen, onOpenChange } = useDisclosure();
+    const [sold, setSold] = useState(false);
+    const [selectedBuyerId, setSelectedBuyerId] = useState<string | null>(null);
     const itemsPerPage = 12;
 
     const supabase = createClient();
+    const router = useRouter();
 
     async function getListingBuyers(
   listingId: string | number
@@ -90,6 +96,45 @@ export default function ListingsPage() {
         return [];
     }
   }
+
+  function sellListing() {
+    if (selectedBuyerId) return;
+
+    (async () => {
+        try {
+        setLoading(true);
+        setSold(false);
+
+        const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
+
+        const { error } = await supabase
+            .from("listings")
+            .update({ is_sold: true })
+            .eq("id", id)
+            .single();
+
+        if (error) {
+            console.error("Error marking listing sold:", error);
+            setLoading(false);
+            return;
+        }
+
+        setBuyers([]);
+
+        setSold(true);
+        onOpen();
+
+        router.push('/listings');
+
+        } catch (err) {
+            console.error("Unexpected error in sell():", err);
+            setLoading(false);
+            return;
+        } finally {
+            setLoading(false);
+        }
+    })();
+    }
 
     // Fetch listings on component mount
     useEffect(() => {
@@ -156,6 +201,32 @@ export default function ListingsPage() {
     }
 
     return (
+      <>
+        <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+          <ModalContent>
+            {(onClose) => (
+              <>
+                <ModalHeader className="flex flex-col gap-1">{sold ? "Listing sold!" : "Sell this listing?"}</ModalHeader>
+                <ModalBody>
+                  <p>
+                    {sold ? "The buyer has been informed that this listing has been sold to them." : "The buyer will be notified that this listing has been sold to them, and the listing will be removed."}
+                  </p>
+                  {sold && (<p>
+                    Please reach out to the buyer to arrange the transaction.
+                  </p>)}
+                </ModalBody>
+                <ModalFooter>
+                  <Button color="primary" onPress={onClose}>
+                    Close
+                  </Button>
+                  {!sold && <Button color="success" onPress={() => {sellListing(); onClose()}}>
+                    Sell
+                  </Button>}
+                </ModalFooter>
+              </>
+            )}
+          </ModalContent>
+        </Modal>
         <div className="min-h-screen bg-background">
             {/* Header */}
             <div className="bg-content1 border-b border-divider sticky top-0 z-40">
@@ -245,7 +316,8 @@ export default function ListingsPage() {
                                             {processedBuyers.map((buyer) => (
                                                 <BuyerProfileCard
                                                     key={buyer.user_id}
-                                                    {...buyer}
+                                                    buyer={buyer}
+                                                    onSell={() => {setSelectedBuyerId(buyer.user_id);onOpen();}}
                                                 />
                                             ))}
                                         </div>
@@ -271,5 +343,6 @@ export default function ListingsPage() {
                 </div>
             </div>
         </div>
+      </>
     );
 }

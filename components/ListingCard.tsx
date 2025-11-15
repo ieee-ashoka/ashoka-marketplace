@@ -17,9 +17,10 @@ type ProductCardProps = React.HTMLAttributes<HTMLDivElement> & {
   showActive?: boolean;
   product: ProductWithCategory;
   actions?: React.ReactNode; // New prop for custom actions
+  onDelete: () => void;
 };
 
-export default function ProductCard({ isActive, showActive, product, className, actions }: ProductCardProps) {
+export default function ProductCard({ isActive, showActive, product, className, actions, onDelete }: ProductCardProps) {
   const supabase = createClient();
 
   const [interestedCount, setInterestedCount] = React.useState<number>(0);
@@ -172,26 +173,36 @@ export default function ProductCard({ isActive, showActive, product, className, 
         {actions ? (
           actions
         ) : (
-            <>
+            <div className="flex flex-col gap-2 w-full">
+              <div className="flex flex-row gap-2 w-full">
                 <Button
                     as={Link}
                     href={`/listing/${product.id}/edit`}
-                    className="w-full mr-2 min-h-[36px] text-sm sm:text-base"
+                    className="w-full min-h-[36px] text-sm sm:text-base"
                     color="primary"
                     variant="flat"
                 >
                     Manage Listing
                 </Button>
                 <Button
-                    as={Link}
-                    href={`/listing/${product.id}/sell`}
+                    onPress={() => { onDelete(); }}
                     className="w-full min-h-[36px] text-sm sm:text-base"
-                    color="primary"
+                    color="danger"
                     variant="flat"
                 >
-                    Sell
+                    Delete
                 </Button>
-            </>
+              </div>
+              <Button
+                  as={Link}
+                  href={`/listing/${product.id}/sell`}
+                  className="w-full min-h-[36px] text-sm sm:text-base"
+                  color="success"
+                  variant="flat"
+              >
+                  Sell
+              </Button>
+            </div>
         )}
       </CardFooter>
     </Card>

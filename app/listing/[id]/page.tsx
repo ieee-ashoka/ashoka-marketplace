@@ -31,6 +31,7 @@ import {
   Tag,
   Flag,
   ShoppingBag,
+  Eye,
   X
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
@@ -48,7 +49,9 @@ import {
   ListingWithCategory,
   handleSend,
   isInterested,
-  getInterestedCount
+  getInterestedCount,
+  addInterestedUser,
+  removeInterestedUser
 } from "./helpers";
 
 // Use types from the database schema
@@ -183,15 +186,41 @@ export default function ListingPage() {
   }
 
   async function markInterested() {
-    // TODO: Track interested on supabase
-    handleSend(listing?.name || '', seller?.email || '', false);
-    onOpen();
+    let success
+    try {
+      if (!currentUser || !listing) return;
+      success = await addInterestedUser(listing.id, currentUser.id);
+      handleSend(listing?.name || '', seller?.email || '', false);
+      onOpen();
+    } catch (error) {
+      console.error("Error marking interest:", error);
+    } finally {
+      if (success) {
+        onOpen();
+        setInterested(true);
+      } else {
+        alert("Could not update your interest. Please try again.")
+      };
+    }
   }
 
   async function markNotInterested() {
-    // Vice-verca
-    handleSend(listing?.name || '', seller?.email || '', true);
-    onOpen();
+    let success
+    try {
+      if (!currentUser || !listing) return;
+      success = await removeInterestedUser(listing.id, currentUser.id);
+      handleSend(listing?.name || '', seller?.email || '', true);
+      onOpen();
+    } catch (error) {
+      console.error("Error marking interest:", error);
+    } finally {
+      if (success) {
+        onOpen();
+        setInterested(false);
+      } else {
+        alert("Could not update your interest. Please try again.")
+      };
+    }
   }
 
   // Loading skeleton
@@ -294,7 +323,7 @@ export default function ListingPage() {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Image Gallery Section */}
           <div className="w-full lg:w-7/12">
-            <div className="relative">
+            <div className="relative" key={`${listing.id}-${interestedCount}`}>
               {/* Main Image */}
               <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
                 <Image
@@ -321,17 +350,6 @@ export default function ListingPage() {
                     variant="shadow"
                   >
                     {listing.condition}
-                  </Chip>
-                )}
-
-                {/* Interested Count */}
-                {interestedCount > 0 && (
-                  <Chip
-                    className="absolute top-3 right-3"
-                    color="primary"
-                    variant="shadow"
-                  >
-                    {interestedCount} Interested
                   </Chip>
                 )}
               </div>
@@ -460,6 +478,10 @@ export default function ListingPage() {
                 <MapPin size={16} />
                 <span>Location: <span className="font-medium text-foreground">Ashoka University</span></span>
               </div>
+              <div className="flex items-center justify-center gap-2 text-black dark:text-white col-span-2 pt-6">
+                <Eye size={18} />
+              <span className="text-large">Interested: <span className="text-large font-medium text-foreground">{interestedCount}</span></span>
+            </div>
             </div>
 
             {/* Desktop: Description Section */}

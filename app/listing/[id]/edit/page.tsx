@@ -252,7 +252,7 @@ export default function EditListingPage() {
                     );
                     for (const url of newlyUploadedUrls) {
                         try {
-                            await deleteImage(url, "listing_images");
+                            await deleteImage(url, "ashoka-marketplace");
                         } catch (cleanupError) {
                             console.error("Failed to cleanup image:", url, cleanupError);
                         }

@@ -56,7 +56,7 @@ export async function deleteListing(listingId: number): Promise<{
       // Delete all images concurrently
       const deletePromises = listing.image.map(async (imageUrl: string) => {
         try {
-          await deleteImage(imageUrl, "listing_images");
+          await deleteImage(imageUrl, "ashoka-marketplace");
           console.log(`Deleted image: ${imageUrl}`);
         } catch (error) {
           console.error(`Failed to delete image ${imageUrl}:`, error);
