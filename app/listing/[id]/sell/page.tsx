@@ -1,15 +1,10 @@
 "use client";
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
     Input,
     Button,
-    Select,
-    SelectItem,
-    Slider,
     Card,
     CardBody,
-    CardHeader,
-    Chip,
     Spinner,
     Pagination,
     Modal,
@@ -18,12 +13,9 @@ import {
     ModalBody,
     ModalFooter,
     useDisclosure,
-    Accordion,
-    AccordionItem,
 } from "@heroui/react";
 import {
     Search,
-    Filter,
     Grid3X3,
     List
 } from "lucide-react";
@@ -172,10 +164,10 @@ export default function ListingsPage() {
     }, [buyers, searchQuery]);
 
     // Pagination
-    const paginatedListings = useMemo(() => {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        return buyers.slice(startIndex, startIndex + itemsPerPage);
-    }, [buyers, currentPage]);
+    // const paginatedListings = useMemo(() => {
+    //     const startIndex = (currentPage - 1) * itemsPerPage;
+    //     return buyers.slice(startIndex, startIndex + itemsPerPage);
+    // }, [buyers, currentPage]);
 
     const totalPages = Math.ceil(buyers.length / itemsPerPage);
 
