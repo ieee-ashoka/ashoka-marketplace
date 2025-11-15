@@ -1,22 +1,22 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { Button } from "@heroui/react";
+import { signOut } from "./helpers";
 
 export default function Logout() {
   const router = useRouter();
-  const supabase = createClient();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleLogout = async () => {
       try {
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-          setError(error.message);
+        const result = await signOut();
+
+        if (!result.success) {
+          setError(result.error || "Failed to sign out");
         } else {
           // Successful logout
           setTimeout(() => {
@@ -32,7 +32,7 @@ export default function Logout() {
     };
 
     handleLogout();
-  }, [router, supabase.auth]);
+  }, [router]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-2">

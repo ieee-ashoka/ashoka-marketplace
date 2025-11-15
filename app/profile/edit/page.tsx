@@ -14,9 +14,9 @@ import {
 } from "@heroui/react";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 import PhoneInput from "@/components/ui/PhoneNumberInput";
+import { fetchProfile, updatePhoneNumber } from "../helpers";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -28,27 +28,18 @@ export default function EditProfilePage() {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
-    const supabase = createClient();
 
 
     useEffect(() => {
-        async function fetchProfile() {
+        async function loadProfile() {
             try {
                 setIsLoading(true);
-                const { data: { user } } = await supabase.auth.getUser();
+                const data = await fetchProfile();
 
-                if (!user) {
+                if (!data) {
                     router.push("/login");
                     return;
                 }
-
-                const { data, error } = await supabase
-                    .from("profiles")
-                    .select("*")
-                    .eq("user_id", user.id)
-                    .single();
-
-                if (error) throw error;
 
                 setProfile(data);
                 setPhoneNumber(data?.phn_no || "");
@@ -60,7 +51,7 @@ export default function EditProfilePage() {
             }
         }
 
-        fetchProfile();
+        loadProfile();
     }, [router]);
 
     const handleSubmit = async () => {
@@ -71,20 +62,12 @@ export default function EditProfilePage() {
             setIsSaving(true);
             setError(null);
 
-            const { data: { user } } = await supabase.auth.getUser();
+            const result = await updatePhoneNumber(phoneNumber);
 
-            if (!user) {
-                router.push("/login");
+            if (!result.success) {
+                setError(result.message);
                 return;
             }
-
-            // Only update the phone number
-            const { error } = await supabase
-                .from("profiles")
-                .update({ phn_no: phoneNumber })
-                .eq("user_id", user.id);
-
-            if (error) throw error;
 
             setSuccess(true);
 

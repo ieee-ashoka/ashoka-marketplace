@@ -27,9 +27,9 @@ import {
     Grid3X3,
     List
 } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
 import { Tables } from "@/types/database.types";
 import ProductCard from "@/components/ProductCard";
+import { fetchActiveListings, fetchCategories as fetchCategoriesHelper } from "./helpers";
 
 // Enhanced listing type with category details
 interface ListingWithCategory extends Tables<"listings"> {
@@ -96,47 +96,24 @@ function BrowseContent() {
     // Mobile filter modal
     const { isOpen: isFilterOpen, onOpen: onFilterOpen, onOpenChange: onFilterOpenChange } = useDisclosure();
 
-    const supabase = createClient();
-
     const fetchListings = useCallback(async () => {
         try {
             setLoading(true);
 
             // Fetch listings with category details
-            const { data: listingsData, error: listingsError } = await supabase
-                .from("listings")
-                .select(`
-                    *,
-                    categories (
-                        id,
-                        name,
-                        key,
-                        icon,
-                        color,
-                        iconColor
-                    )
-                `)
-                .not("expired_at", "lt", new Date().toISOString())
-                .not("is_sold", "eq", true);
-
-            if (listingsError) throw listingsError;
+            const listingsData = await fetchActiveListings();
 
             // Fetch categories for filters
-            const { data: categoriesData, error: categoriesError } = await supabase
-                .from("categories")
-                .select("*")
-                .order("name");
+            const categoriesData = await fetchCategoriesHelper();
 
-            if (categoriesError) throw categoriesError;
-
-            setListings(listingsData || []);
-            setCategories(categoriesData || []);
+            setListings(listingsData);
+            setCategories(categoriesData);
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
             setLoading(false);
         }
-    }, [supabase]);
+    }, []);
 
     // Fetch listings on component mount
     useEffect(() => {

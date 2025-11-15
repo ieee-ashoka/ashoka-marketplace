@@ -19,19 +19,20 @@ import {
     Grid3X3,
     List
 } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
 import BuyerProfileCard from "@/components/BuyerProfileCard";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import {
-    isListingOwnerAndListingExists
+    isListingOwnerAndListingExists,
+    getListingBuyers,
+    markListingAsSold
 } from "./helpers";
 
 export default function ListingsPage() {
-  const params = useParams();
-  const listingId = params.id as string;
+    const params = useParams();
+    const listingId = params.id as string;
     // State management
-    const [buyers, setBuyers] = useState<Array<{avatar: string | null; name: string | null; created_at: string | null; user_id: string | null}>>([]);;
+    const [buyers, setBuyers] = useState<Array<{ avatar: string | null; name: string | null; created_at: string | null; user_id: string | null }>>([]);;
     const [loading, setLoading] = useState(true);
     const [isOwnerAndExists, setIsOwnerAndExists] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -43,98 +44,45 @@ export default function ListingsPage() {
     const [selectedBuyerId, setSelectedBuyerId] = useState<string | null>(null);
     const itemsPerPage = 12;
 
-    const supabase = createClient();
     const router = useRouter();
 
-    async function getListingBuyers(
-  listingId: string | number
-): Promise<Array<{avatar: string | null; name: string | null; created_at: string | null; user_id: string | null}>> {
-    try {
-      setLoading(true);
-      const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
-      const buyers: Array<{avatar: string | null; name: string | null; created_at: string | null; user_id: string | null}> = [];
-
-      const { data, error } = await supabase
-      .from("interested")
-      .select()
-      .eq("listing_id", id)
-      .single();
-
-      if (error) {
-        console.error("Error fetching listing:", error);
-        setLoading(false);
-        return [];
-      };
-
-      for (const userId of data.interested) {
-      const { data: userData, error: userError } = await supabase
-          .from("profiles")
-          .select("avatar, name, created_at, user_id")
-          .eq("user_id", userId)
-          .single();
-      if (userError) {
-          console.error("Error fetching user data:", userError);
-          continue;
-      }
-        buyers.push(userData);
-      }
-
-      setLoading(false);
-
-      return buyers;
-    } catch (error) {
-        console.error("Error fetching listing buyers:", error);
-        setLoading(false);
-        return [];
-    }
-  }
-
-  function sellListing() {
-    if (selectedBuyerId) return;
-
-    (async () => {
-        try {
+    async function fetchListingBuyers() {
         setLoading(true);
-        setSold(false);
+        const buyers = await getListingBuyers(listingId);
+        setBuyers(buyers);
+        setLoading(false);
+    }
 
-        const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
+    async function sellListing() {
+        if (selectedBuyerId) return;
 
-        const { error } = await supabase
-            .from("listings")
-            .update({ is_sold: true })
-            .eq("id", id)
-            .single();
+        try {
+            setLoading(true);
+            setSold(false);
 
-        if (error) {
-            console.error("Error marking listing sold:", error);
-            setLoading(false);
-            return;
-        }
+            const result = await markListingAsSold(listingId);
 
-        setBuyers([]);
+            if (!result.success) {
+                console.error("Error marking listing sold:", result.error);
+                setLoading(false);
+                return;
+            }
 
-        setSold(true);
-        onOpen();
-
-        router.push('/listings');
-
+            setBuyers([]);
+            setSold(true);
+            onOpen();
+            router.push('/listings');
         } catch (err) {
             console.error("Unexpected error in sell():", err);
-            setLoading(false);
-            return;
         } finally {
             setLoading(false);
         }
-    })();
     }
 
     // Fetch listings on component mount
     useEffect(() => {
-        async function fetchBuyers() {
-            const buyers = await getListingBuyers(listingId);
-            setBuyers(buyers);
-        }
-        fetchBuyers();
+        fetchListingBuyers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [listingId]);
 
     useEffect(() => {
@@ -193,148 +141,148 @@ export default function ListingsPage() {
     }
 
     return (
-      <>
-        <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-          <ModalContent>
-            {(onClose) => (
-              <>
-                <ModalHeader className="flex flex-col gap-1">{sold ? "Listing sold!" : "Sell this listing?"}</ModalHeader>
-                <ModalBody>
-                  <p>
-                    {sold ? "The buyer has been informed that this listing has been sold to them." : "The buyer will be notified that this listing has been sold to them, and the listing will be removed."}
-                  </p>
-                  {sold && (<p>
-                    Please reach out to the buyer to arrange the transaction.
-                  </p>)}
-                </ModalBody>
-                <ModalFooter>
-                  <Button color="primary" onPress={onClose}>
-                    Close
-                  </Button>
-                  {!sold && <Button color="success" onPress={() => {sellListing(); onClose()}}>
-                    Sell
-                  </Button>}
-                </ModalFooter>
-              </>
-            )}
-          </ModalContent>
-        </Modal>
-        <div className="min-h-screen bg-background">
-            {/* Header */}
-            <div className="bg-content1 border-b border-divider sticky top-0 z-40">
-                <div className="max-w-7xl mx-auto px-4 py-4">
-                    <div className="flex flex-col gap-4">
-                        {/* Title and Stats */}
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <h1 className="text-2xl font-bold text-foreground">Sell {name}</h1>
-                                <p className="text-foreground-500 text-sm mt-1">
-                                    {buyers.length} interested buyers
+        <>
+            <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader className="flex flex-col gap-1">{sold ? "Listing sold!" : "Sell this listing?"}</ModalHeader>
+                            <ModalBody>
+                                <p>
+                                    {sold ? "The buyer has been informed that this listing has been sold to them." : "The buyer will be notified that this listing has been sold to them, and the listing will be removed."}
                                 </p>
+                                {sold && (<p>
+                                    Please reach out to the buyer to arrange the transaction.
+                                </p>)}
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button color="primary" onPress={onClose}>
+                                    Close
+                                </Button>
+                                {!sold && <Button color="success" onPress={() => { sellListing(); onClose() }}>
+                                    Sell
+                                </Button>}
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
+            <div className="min-h-screen bg-background">
+                {/* Header */}
+                <div className="bg-content1 border-b border-divider sticky top-0 z-40">
+                    <div className="max-w-7xl mx-auto px-4 py-4">
+                        <div className="flex flex-col gap-4">
+                            {/* Title and Stats */}
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h1 className="text-2xl font-bold text-foreground">Sell {name}</h1>
+                                    <p className="text-foreground-500 text-sm mt-1">
+                                        {buyers.length} interested buyers
+                                    </p>
+                                </div>
+
+                                {/* View Mode Toggle - Desktop */}
+                                <div className="hidden md:flex gap-2">
+                                    <Button
+                                        isIconOnly
+                                        variant={viewMode === "grid" ? "solid" : "light"}
+                                        color="primary"
+                                        onPress={() => setViewMode("grid")}
+                                    >
+                                        <Grid3X3 size={18} />
+                                    </Button>
+                                    <Button
+                                        isIconOnly
+                                        variant={viewMode === "list" ? "solid" : "light"}
+                                        color="primary"
+                                        onPress={() => setViewMode("list")}
+                                    >
+                                        <List size={18} />
+                                    </Button>
+                                </div>
                             </div>
 
-                            {/* View Mode Toggle - Desktop */}
-                            <div className="hidden md:flex gap-2">
-                                <Button
-                                    isIconOnly
-                                    variant={viewMode === "grid" ? "solid" : "light"}
-                                    color="primary"
-                                    onPress={() => setViewMode("grid")}
-                                >
-                                    <Grid3X3 size={18} />
-                                </Button>
-                                <Button
-                                    isIconOnly
-                                    variant={viewMode === "list" ? "solid" : "light"}
-                                    color="primary"
-                                    onPress={() => setViewMode("list")}
-                                >
-                                    <List size={18} />
-                                </Button>
+                            {/* Search Bar */}
+                            <div className="flex gap-3">
+                                {/* Search Input */}
+                                <Input
+                                    placeholder="Search buyers..."
+                                    startContent={<Search size={18} className="text-foreground-400" />}
+                                    value={searchQuery}
+                                    onValueChange={setSearchQuery}
+                                    className="flex-1"
+                                    isClearable
+                                />
                             </div>
-                        </div>
-
-                        {/* Search Bar */}
-                        <div className="flex gap-3">
-                            {/* Search Input */}
-                            <Input
-                                placeholder="Search buyers..."
-                                startContent={<Search size={18} className="text-foreground-400" />}
-                                value={searchQuery}
-                                onValueChange={setSearchQuery}
-                                className="flex-1"
-                                isClearable
-                            />
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="max-w-7xl mx-auto px-4 py-6">
-                <div className="flex gap-6">
-                    {/* Main Content */}
-                    <main className="flex-1 min-w-0">
-                        {loading ? (
-                            <div className="flex justify-center py-12">
-                                <Spinner size="lg" />
-                            </div>
-                        ) : (
-                            <>
-                                {/* Results Grid/List */}
-                                {buyers.length === 0 ? (
-                                    <Card className="p-8 text-center">
-                                        <CardBody>
-                                            <p className="text-foreground-500 text-lg mb-4">No buyers interested</p>
-                                            <p className="text-foreground-400">
-                                                Once buyers express interest, they will appear here.
-                                            </p>
-                                            <Button
-                                                color="primary"
-                                                variant="flat"
-                                                onPress={clearFilters}
-                                                className="mt-4"
-                                            >
-                                                Clear Filters
-                                            </Button>
-                                        </CardBody>
-                                    </Card>
-                                ) : (
-                                    <>
-                                        <div className={
-                                            viewMode === "grid"
-                                                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-                                                : "flex flex-col gap-4"
-                                        }>
-                                            {processedBuyers.map((buyer) => (
-                                                <BuyerProfileCard
-                                                    key={buyer.user_id}
-                                                    buyer={buyer}
-                                                    onSell={() => {setSelectedBuyerId(buyer.user_id);onOpen();}}
-                                                />
-                                            ))}
-                                        </div>
-
-                                        {/* Pagination */}
-                                        {totalPages > 1 && (
-                                            <div className="flex justify-center mt-8">
-                                                <Pagination
-                                                    total={totalPages}
-                                                    page={currentPage}
-                                                    onChange={setCurrentPage}
-                                                    showControls
-                                                    showShadow
+                <div className="max-w-7xl mx-auto px-4 py-6">
+                    <div className="flex gap-6">
+                        {/* Main Content */}
+                        <main className="flex-1 min-w-0">
+                            {loading ? (
+                                <div className="flex justify-center py-12">
+                                    <Spinner size="lg" />
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Results Grid/List */}
+                                    {buyers.length === 0 ? (
+                                        <Card className="p-8 text-center">
+                                            <CardBody>
+                                                <p className="text-foreground-500 text-lg mb-4">No buyers interested</p>
+                                                <p className="text-foreground-400">
+                                                    Once buyers express interest, they will appear here.
+                                                </p>
+                                                <Button
                                                     color="primary"
-                                                />
+                                                    variant="flat"
+                                                    onPress={clearFilters}
+                                                    className="mt-4"
+                                                >
+                                                    Clear Filters
+                                                </Button>
+                                            </CardBody>
+                                        </Card>
+                                    ) : (
+                                        <>
+                                            <div className={
+                                                viewMode === "grid"
+                                                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                                                    : "flex flex-col gap-4"
+                                            }>
+                                                {processedBuyers.map((buyer) => (
+                                                    <BuyerProfileCard
+                                                        key={buyer.user_id}
+                                                        buyer={buyer}
+                                                        onSell={() => { setSelectedBuyerId(buyer.user_id); onOpen(); }}
+                                                    />
+                                                ))}
                                             </div>
-                                        )}
-                                    </>
-                                )}
-                            </>
-                        )}
-                    </main>
+
+                                            {/* Pagination */}
+                                            {totalPages > 1 && (
+                                                <div className="flex justify-center mt-8">
+                                                    <Pagination
+                                                        total={totalPages}
+                                                        page={currentPage}
+                                                        onChange={setCurrentPage}
+                                                        showControls
+                                                        showShadow
+                                                        color="primary"
+                                                    />
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </>
+                            )}
+                        </main>
+                    </div>
                 </div>
             </div>
-        </div>
-      </>
+        </>
     );
 }

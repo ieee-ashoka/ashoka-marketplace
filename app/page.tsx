@@ -16,8 +16,8 @@ import {
 import ProductCard from "../components/ProductCard";
 import { Tables } from "@/types/database.types";
 import { Button } from "@heroui/react";
-import { createClient } from "@/utils/supabase/client";
 import CategoriesSkeleton from "../components/loading/categories";
+import { fetchCategories, fetchFeaturedListings, ListingWithCategory } from "./helpers";
 
 interface IconProps {
   size?: number | string;
@@ -76,54 +76,20 @@ const colorClassMap: Record<string, { bg: string; text: string }> = {
 export default function Home() {
   const [categories, setCategories] = useState<Tables<"categories">[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [featuredListings, setFeaturedListings] = useState<(Tables<"listings"> & { categories: Tables<"categories"> | null })[]>([]);
+  const [featuredListings, setFeaturedListings] = useState<ListingWithCategory[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
 
   // Fetch categories and featured listings concurrently
   useEffect(() => {
     async function fetchData() {
       try {
-        const supabase = createClient();
-
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-
-        const [categoriesResult, listingsResult] = await Promise.all([
-          supabase
-            .from("categories")
-            .select("*")
-            .order("name")
-            .limit(6), // Show top 6 categories on homepage
-
-          supabase
-            .from("listings")
-            .select(`
-              *,
-              categories (
-                *
-              )
-            `)
-            .order("created_at", { ascending: false })
-            .limit(20) // Fetch more to ensure we get 4 after filtering
+        const [categoriesData, listingsData] = await Promise.all([
+          fetchCategories(6),
+          fetchFeaturedListings(4)
         ]);
 
-        if (categoriesResult.error) {
-          console.error("Error fetching categories:", categoriesResult.error);
-          setCategories([]);
-        } else {
-          setCategories(categoriesResult.data || []);
-        }
-
-        if (listingsResult.error) {
-          console.error("Error fetching featured listings:", listingsResult.error);
-          setFeaturedListings([]);
-        } else {
-          // Filter out current user's listings and take only 4
-          const filteredListings = (listingsResult.data || [])
-            .filter(listing => !user || listing.user_id !== user.id)
-            .slice(0, 4);
-          setFeaturedListings(filteredListings);
-        }
+        setCategories(categoriesData);
+        setFeaturedListings(listingsData);
       } catch (error) {
         console.error("Error fetching data:", error);
         setCategories([]);

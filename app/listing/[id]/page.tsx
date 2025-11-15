@@ -530,7 +530,6 @@ export default function ListingPage() {
                   variant="flat"
                   color={isInWishlist ? "danger" : "default"}
                   onPress={toggleWishlist}
-                  isLoading={isAddingToWishlist}
                   startContent={<Heart fill={isInWishlist ? "currentColor" : "none"} />}
                   size="lg"
                 >
@@ -541,7 +540,7 @@ export default function ListingPage() {
                     isIconOnly
                     variant="flat"
                     size="lg"
-                    onClick={() => {
+                    onPress={() => {
                       if (navigator.share) {
                         navigator.share({
                           title: listing.name || "Check out this listing",

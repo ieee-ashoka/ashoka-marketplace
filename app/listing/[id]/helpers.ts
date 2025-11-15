@@ -35,7 +35,6 @@ export const handleSend = async (
   seller: string,
   notinterested = false
 ) => {
-  const supabase = createClient();
   const userdata = await supabase.auth.getUser();
   let data_ = {};
   if (userdata?.data.user) {

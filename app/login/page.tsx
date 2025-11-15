@@ -1,21 +1,18 @@
 "use client";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { checkUserLoggedIn, signInWithOAuth } from "./helpers";
 
 export default function Login() {
   const router = useRouter();
-  const supabase = createClient();
   const nextUrl = "/onboarding";
 
   useEffect(() => {
     const checkUserAndLogin = async () => {
       // Check if user is already logged in
-      const {
-        data,
-      } = await supabase.auth.getClaims();
+      const isLoggedIn = await checkUserLoggedIn();
 
-      if (data?.claims) {
+      if (isLoggedIn) {
         // User is already logged in, redirect to homepage
         router.push("/");
       } else {
@@ -25,17 +22,12 @@ export default function Login() {
     };
 
     checkUserAndLogin();
-  }, []);
+  }, [router]);
 
   const handleLogin = async () => {
     const url = `${location.origin}/auth/callback?next=${nextUrl}`;
     console.log("Redirect URL:", url);
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: url,
-      },
-    });
+    await signInWithOAuth("google", url);
   };
 
   return (

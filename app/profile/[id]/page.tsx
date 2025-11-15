@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -16,6 +15,7 @@ import { Database } from "@/types/database.types";
 import ProductCard from "@/components/ProductCard";
 import ProfileSkeleton from "@/components/loading/profile";
 import ProfileCard from "@/components/ProfileCard";
+import { fetchUserProfile, fetchUserActiveListings } from "./helpers";
 
 // Use types from the database schema
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -25,9 +25,6 @@ type Listing = Database["public"]["Tables"]["listings"]["Row"];
 type ListingWithCategory = Listing & {
     categories?: Database["public"]["Tables"]["categories"]["Row"] | null;
 };
-
-// Initialize Supabase client
-const supabase = createClient();
 
 export default function UserProfilePage() {
     const params = useParams();
@@ -40,67 +37,36 @@ export default function UserProfilePage() {
     const [isOwnProfile, setIsOwnProfile] = useState(false);
 
     useEffect(() => {
-        async function fetchUserProfile() {
+        async function loadUserProfile() {
             try {
-                // Check if viewing own profile
-                const { data: authData } = await supabase.auth.getClaims();
-                const currentUserId = authData?.claims?.sub;
+                // Fetch profile
+                const { profile: profileData, isOwnProfile: isOwn } =
+                    await fetchUserProfile(userId);
 
-                // Determine lookup method - by user_id (UUID) or username
-                let profileQuery = supabase.from("profiles").select("*");
-
-                // Try to match by user_id first (if it's a UUID format)
-                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-                if (uuidRegex.test(userId)) {
-                    profileQuery = profileQuery.eq("user_id", userId);
-                } else {
-                    // Otherwise match by username
-                    profileQuery = profileQuery.eq("username", userId);
-                }
-
-                const { data: profileData, error: profileError } = await profileQuery.single();
-
-                if (profileError || !profileData) {
-                    console.error("Error fetching profile:", profileError);
+                if (!profileData) {
                     setIsLoading(false);
                     return;
                 }
 
                 setProfile(profileData);
-                setIsOwnProfile(currentUserId === profileData.user_id);
+                setIsOwnProfile(isOwn);
 
                 // Fetch user's active listings
-                const { data: listingsData, error: listingsError } = await supabase
-                    .from("listings")
-                    .select(`
-            *,
-            categories (
-              id,
-              name,
-              key,
-              icon,
-              color,
-              iconColor
-            )
-          `)
-                    .eq("user_id", profileData.user_id)
-                    .is("expired_at", null)
-                    .order("created_at", { ascending: false });
-
-                if (listingsError) {
-                    console.error("Error fetching listings:", listingsError);
-                } else {
-                    setUserListings(listingsData || []);
+                if (profileData.user_id) {
+                    const listingsData = await fetchUserActiveListings(
+                        profileData.user_id
+                    );
+                    setUserListings(listingsData);
                 }
             } catch (error) {
-                console.error("Error in fetchUserProfile:", error);
+                console.error("Error in loadUserProfile:", error);
             } finally {
                 setIsLoading(false);
             }
         }
 
         if (userId) {
-            fetchUserProfile();
+            loadUserProfile();
         }
     }, [userId]);
 

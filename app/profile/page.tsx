@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState, Key } from "react";
-import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -23,7 +22,13 @@ import {
   Trash2,
 } from "lucide-react";
 import { Database } from "@/types/database.types";
-import { deleteListing } from "./helpers";
+import {
+  deleteListing,
+  fetchProfile,
+  fetchMyListings,
+  fetchWishlistItems,
+  removeFromWishlist
+} from "./helpers";
 import ProductCard from "@/components/ProductCard";
 import ProfileSkeleton from "@/components/loading/profile";
 import ProfileCard from "@/components/ProfileCard";
@@ -36,10 +41,6 @@ type Listing = Database["public"]["Tables"]["listings"]["Row"];
 type ListingWithCategory = Listing & {
   categories?: Database["public"]["Tables"]["categories"]["Row"] | null;
 }
-// type Wishlist = Database["public"]["Tables"]["wishlist"]["Row"];
-
-// Initialize Supabase client
-const supabase = createClient();
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -56,91 +57,21 @@ export default function ProfilePage() {
     // Fetch user profile, listings and wishlist data
     async function fetchProfileData() {
       try {
-        const {
-          data,
-        } = await supabase.auth.getClaims();
+        const [profileData, listingsData, wishlistData] = await Promise.all([
+          fetchProfile(),
+          fetchMyListings(),
+          fetchWishlistItems(),
+        ]);
 
-        if (!data?.claims) {
+        if (!profileData) {
           // Redirect to login if not authenticated
           router.push("/login");
           return;
         }
 
-        const userId = data.claims.sub;
-
-        // Fetch all data concurrently using Promise.all for better performance
-        const [profileResult, listingsResult, wishlistEntriesResult] = await Promise.all([
-          // Fetch profile data
-          supabase
-            .from("profiles")
-            .select("*")
-            .eq("user_id", userId)
-            .single(),
-          // Fetch user's listings with category details
-          supabase
-            .from("listings")
-            .select(`
-              *,
-              categories (
-                id,
-                name,
-                key,
-                icon,
-                color,
-                iconColor
-              )
-            `)
-            .eq("user_id", userId)
-            .order("created_at", { ascending: false }),
-          // Fetch wishlist entries to get listing_ids
-          supabase
-            .from("wishlist")
-            .select("listing_id")
-            .eq("user_id", userId),
-        ]);
-
-        // Handle errors from any of the queries
-        if (profileResult.error) throw profileResult.error;
-        if (listingsResult.error) throw listingsResult.error;
-        if (wishlistEntriesResult.error) throw wishlistEntriesResult.error;
-
-        // Set profile and listings data
-        setProfile(profileResult.data);
-        setMyListings(listingsResult.data || []);
-
-        // Handle wishlist - fetch actual listing data if there are wishlist entries
-        if (!wishlistEntriesResult.data || wishlistEntriesResult.data.length === 0) {
-          setWishlist([]);
-        } else {
-          // Extract listing_ids from wishlist entries
-          const listingIds = wishlistEntriesResult.data
-            .map(item => item.listing_id)
-            .filter((id): id is number => id !== null);
-
-          if (listingIds.length === 0) {
-            setWishlist([]);
-          } else {
-            // Fetch the actual listing data for items in wishlist with category details
-            const { data: wishlistListings, error: wishlistListingsError } = await supabase
-              .from("listings")
-              .select(`
-                *,
-                categories (
-                  id,
-                  name,
-                  key,
-                  icon,
-                  color,
-                  iconColor
-                )
-              `)
-              .in("id", listingIds);
-
-            if (wishlistListingsError) throw wishlistListingsError;
-
-            setWishlist(wishlistListings || []);
-          }
-        }
+        setProfile(profileData);
+        setMyListings(listingsData);
+        setWishlist(wishlistData);
       } catch (error) {
         console.error("Error fetching profile data:", error);
       } finally {
@@ -395,21 +326,14 @@ export default function ProfilePage() {
                           className="min-w-0 px-2 sm:px-3"
                           onPress={async () => {
                             try {
-                              const {
-                                data: { user },
-                              } = await supabase.auth.getUser();
-                              if (!user) return;
+                              const result = await removeFromWishlist(listing.id);
 
-                              await supabase
-                                .from("wishlist")
-                                .delete()
-                                .eq("user_id", user.id)
-                                .eq("listing_id", listing.id);
-
-                              // Update wishlist state
-                              setWishlist(
-                                wishlist.filter((item) => item.id !== listing.id)
-                              );
+                              if (result.success) {
+                                // Update wishlist state
+                                setWishlist(
+                                  wishlist.filter((item) => item.id !== listing.id)
+                                );
+                              }
                             } catch (error) {
                               console.error(
                                 "Error removing from wishlist:",

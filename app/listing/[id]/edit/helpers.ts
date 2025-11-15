@@ -21,6 +21,8 @@ export interface ListingWithCategory extends Tables<"listings"> {
   categories?: Tables<"categories"> | null;
 }
 
+const supabase = createClient();
+
 /**
  * Get a listing by ID for editing (must be owned by current user)
  */
@@ -28,7 +30,6 @@ export async function getListingForEdit(
   listingId: string | number
 ): Promise<{ listing: ListingWithCategory | null; isOwner: boolean }> {
   try {
-    const supabase = createClient();
     const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
 
     // Get current user
@@ -75,7 +76,6 @@ export async function getListingForEdit(
  */
 export async function getCategories(): Promise<Tables<"categories">[]> {
   try {
-    const supabase = createClient();
     const { data, error } = await supabase
       .from("categories")
       .select("*")
@@ -178,8 +178,6 @@ export async function updateListing(
   }
 ): Promise<UpdateListingResult> {
   try {
-    const supabase = createClient();
-
     // Get the current user
     const { data: userData, error: userError } =
       await supabase.auth.getClaims();

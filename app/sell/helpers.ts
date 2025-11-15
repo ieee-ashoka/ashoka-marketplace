@@ -10,11 +10,28 @@ import {
   type CompressionResult,
 } from "@/utils/images/compression";
 
+// Create a single Supabase client instance
+const supabase = createClient();
+
 export interface CreateListingResult {
   success: boolean;
   message: string;
   listingId?: number;
   error?: string;
+}
+
+/**
+ * Get current user ID from JWT claims
+ */
+async function getCurrentUserId(): Promise<string | null> {
+  const { data, error } = await supabase.auth.getClaims();
+
+  if (error || !data?.claims) {
+    console.error("Error getting user claims:", error);
+    return null;
+  }
+
+  return data.claims.sub || null;
 }
 
 /**
@@ -26,17 +43,14 @@ export async function createListing(
   }
 ): Promise<CreateListingResult> {
   try {
-    const supabase = await createClient();
-
     // Get the current user
-    const { data: supabaseData, error: userError } =
-      await supabase.auth.getClaims();
+    const userId = await getCurrentUserId();
 
-    if (userError || !supabaseData?.claims) {
+    if (!userId) {
       return {
         success: false,
         message: "You must be logged in to create a listing",
-        error: userError?.message || "Not authenticated",
+        error: "Not authenticated",
       };
     }
 
@@ -73,7 +87,7 @@ export async function createListing(
 
     // Prepare listing data using TablesInsert type
     const listingData: TablesInsert<"listings"> = {
-      user_id: supabaseData.claims.sub,
+      user_id: userId,
       name: data.name,
       description: data.description || null,
       price: data.price ?? null,
@@ -298,14 +312,9 @@ export async function uploadMultipleListingImages(
  */
 export async function getUserListings() {
   try {
-    const supabase = await createClient();
+    const userId = await getCurrentUserId();
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
+    if (!userId) {
       return {
         success: false,
         listings: [],
@@ -316,7 +325,7 @@ export async function getUserListings() {
     const { data: listings, error } = await supabase
       .from("listings")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -349,14 +358,9 @@ export async function deleteListing(
   listingId: number
 ): Promise<{ success: boolean; message: string; error?: string }> {
   try {
-    const supabase = await createClient();
+    const userId = await getCurrentUserId();
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
+    if (!userId) {
       return {
         success: false,
         message: "You must be logged in to delete a listing",
@@ -369,7 +373,7 @@ export async function deleteListing(
       .from("listings")
       .select("*")
       .eq("id", listingId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     if (fetchError || !listing) {
@@ -385,7 +389,7 @@ export async function deleteListing(
       .from("listings")
       .delete()
       .eq("id", listingId)
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
 
     if (deleteError) {
       console.error("Error deleting listing:", deleteError);

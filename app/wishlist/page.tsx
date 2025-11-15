@@ -2,71 +2,41 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
-import { Tables } from "@/types/database.types";
 import ProductCard from "@/components/ProductCard";
 import { Button, Spinner } from "@heroui/react";
 import { Heart, ShoppingBag } from "lucide-react";
 import Link from "next/link";
-
-// Enhanced listing type with category details
-interface ListingWithCategory extends Tables<"listings"> {
-    categories?: Tables<"categories"> | null;
-}
-
-interface WishlistItem extends Tables<"wishlist"> {
-    listings?: ListingWithCategory | null;
-}
+import {
+    getCurrentUserId,
+    fetchWishlistItems,
+    removeFromWishlist,
+    WishlistItem,
+    ListingWithCategory
+} from "./helpers";
 
 export default function WishlistPage() {
     const router = useRouter();
-    const supabase = createClient();
     const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     useEffect(() => {
-        async function fetchWishlist() {
+        async function loadWishlist() {
             try {
                 // Get current user
-                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                const userId = await getCurrentUserId();
 
-                if (userError || !user) {
+                if (!userId) {
                     // Redirect to login if not authenticated
                     router.push("/login");
                     return;
                 }
 
-                setCurrentUserId(user.id);
+                setCurrentUserId(userId);
 
-                // Fetch wishlist with listing details
-                const { data, error } = await supabase
-                    .from("wishlist")
-                    .select(`
-            *,
-            listings (
-              *,
-              categories (
-                id,
-                name,
-                key,
-                icon,
-                color,
-                iconColor
-              )
-            )
-          `)
-                    .eq("user_id", user.id)
-                    .order("created_at", { ascending: false });
-
-                if (error) {
-                    console.error("Error fetching wishlist:", error);
-                    setWishlistItems([]);
-                } else {
-                    // Filter out items where listing is null (deleted listings)
-                    const validItems = (data || []).filter(item => item.listings !== null);
-                    setWishlistItems(validItems);
-                }
+                // Fetch wishlist items
+                const items = await fetchWishlistItems(userId);
+                setWishlistItems(items);
             } catch (error) {
                 console.error("Error:", error);
             } finally {
@@ -74,28 +44,18 @@ export default function WishlistPage() {
             }
         }
 
-        fetchWishlist();
-    }, [router, supabase]);
+        loadWishlist();
+    }, [router]);
 
     // Handle removing item from wishlist
     const handleRemoveFromWishlist = async (wishlistId: number) => {
         if (!currentUserId) return;
 
-        try {
-            const { error } = await supabase
-                .from("wishlist")
-                .delete()
-                .eq("id", wishlistId);
+        const success = await removeFromWishlist(wishlistId);
 
-            if (error) {
-                console.error("Error removing from wishlist:", error);
-                return;
-            }
-
+        if (success) {
             // Update local state
             setWishlistItems(prev => prev.filter(item => item.id !== wishlistId));
-        } catch (error) {
-            console.error("Error:", error);
         }
     };
 

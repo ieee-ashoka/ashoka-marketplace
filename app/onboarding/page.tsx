@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
 import { TablesInsert } from "@/types/database.types";
 import { Avatar, Button, Card, CardBody, Input } from "@heroui/react";
 import { User as UserIcon } from "lucide-react";
-import PhoneInput from "@/components/ui/PhoneNumberInput"; // Import our custom component
+import PhoneInput from "@/components/ui/PhoneNumberInput";
+import {
+  getCurrentUserData,
+  checkProfileExists,
+  createProfile as createProfileInDB
+} from "./helpers";
 
 export default function OnboardingPage() {
   const router = useRouter();
-
-  // Use useMemo to ensure supabase client has stable reference
-  const supabase = useMemo(() => createClient(), []);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -33,46 +34,55 @@ export default function OnboardingPage() {
     phn_no: true, // Phone is almost always missing from OAuth
   });
 
+  const createProfile = useCallback(async (data: TablesInsert<"profiles">) => {
+    try {
+      setSubmitting(true);
+
+      const result = await createProfileInDB(data);
+
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      // Redirect to homepage after successful profile creation
+      router.push("/");
+    } catch (err) {
+      setError((err as Error).message || "Something went wrong");
+      setSubmitting(false);
+    }
+  }, [router]);
+
   useEffect(() => {
     const checkUserProfile = async () => {
       try {
         setLoading(true);
 
-        // Get current user
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+        // Get current user data
+        const { userId, metadata } = await getCurrentUserData();
 
-        if (userError || !user) {
+        if (!userId) {
           router.push("/login");
           return;
         }
 
         // Check if profile already exists
-        const { data: existingProfile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
+        const profileExists = await checkProfileExists(userId);
 
-        if (existingProfile) {
+        if (profileExists) {
           // Profile exists, redirect to home
           router.push("/");
           return;
         }
 
-        // Get metadata from current user
-        const metadata = user.user_metadata;
         console.log("User metadata:", metadata);
 
         // Check for missing fields and prepare data
         const newProfileData = {
-          name: metadata.name || metadata.full_name || "",
-          email: metadata.email || "",
-          avatar: metadata.avatar_url || metadata.picture || "",
-          phn_no: metadata.phone_number || metadata.phn_no || "",
-          user_id: user.id,
+          name: (metadata?.name as string) || (metadata?.full_name as string) || "",
+          email: (metadata?.email as string) || "",
+          avatar: (metadata?.avatar_url as string) || (metadata?.picture as string) || "",
+          phn_no: (metadata?.phone_number as string) || (metadata?.phn_no as string) || "",
+          user_id: userId,
         };
 
         console.log(newProfileData);
@@ -102,30 +112,7 @@ export default function OnboardingPage() {
     };
 
     checkUserProfile();
-  }, []); // Remove router and supabase from dependencies
-
-  const createProfile = async (data: TablesInsert<"profiles">) => {
-    try {
-      setSubmitting(true);
-
-      // Insert profile data
-      const { error } = await supabase.from("profiles").insert([
-        {
-          ...data,
-        },
-      ]);
-
-      if (error) {
-        throw error;
-      }
-
-      // Redirect to homepage after successful profile creation
-      router.push("/");
-    } catch (err) {
-      setError((err as Error).message || "Something went wrong");
-      setSubmitting(false);
-    }
-  };
+  }, [router, createProfile]);
 
   const validatePhone = (phone: string): boolean => {
     // More permissive validation for international numbers
@@ -201,7 +188,7 @@ export default function OnboardingPage() {
                 imgProps={{
                   referrerPolicy: "no-referrer",
                 }}
-                // showFallback
+              // showFallback
               />
             </div>
           )}
