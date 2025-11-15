@@ -3,24 +3,37 @@ import { format } from "date-fns";
 import Link from "next/link";
 import React from "react";
 
-export default function BuyerProfileCard(seller: {avatar: string | null; name: string | null; created_at: string | null; user_id: string | null} | null) {
+type BuyerProfileCardProps = {
+  buyer: {
+    avatar: string | null;
+    name: string | null;
+    created_at: string | null;
+    user_id: string | null;
+  };
+  onSell: () => void;
+};
+
+export default function BuyerProfileCard({
+  buyer,
+  onSell,
+}: BuyerProfileCardProps) {
     return (
         <Card className="mb-6">
             <CardBody>
                 <div className="flex items-center p-4">
                     <Avatar
-                        src={seller?.avatar || "https://i.pravatar.cc/300"}
-                        name={seller?.name?.charAt(0).toUpperCase() || "U"}
+                        src={buyer?.avatar || "https://i.pravatar.cc/300"}
+                        name={buyer?.name?.charAt(0).toUpperCase() || "U"}
                         size="md"
                         className="mr-4"
                     />
                     <div>
                         <h3 className="font-medium">
-                            {seller?.name || "Ashoka User"}
+                            {buyer?.name || "Ashoka User"}
                         </h3>
-                        {seller?.created_at && (
+                        {buyer?.created_at && (
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Member since {format(new Date(seller?.created_at), 'MMM yyyy')}
+                                Member since {format(new Date(buyer?.created_at), 'MMM yyyy')}
                             </p>
                         )}
                     </div>
@@ -28,7 +41,7 @@ export default function BuyerProfileCard(seller: {avatar: string | null; name: s
                 <div className="p-4 flex justify-between text-sm">
                     <Button
                         as={Link}
-                        href={`/profile/${seller?.user_id}`}
+                        href={`/profile/${buyer?.user_id}`}
                         variant="flat"
                         color="secondary"
                         className="w-full mr-2"
@@ -36,8 +49,7 @@ export default function BuyerProfileCard(seller: {avatar: string | null; name: s
                         View Profile
                     </Button>
                     <Button
-                        as={Link}
-                        href={`/profile/${seller?.user_id}`}
+                        onPress={() => { onSell(); }}
                         variant="flat"
                         color="success"
                         className="w-full"

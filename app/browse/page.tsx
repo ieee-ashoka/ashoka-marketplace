@@ -110,7 +110,8 @@ export default function BrowsePage() {
                         iconColor
                     )
                 `)
-                .not("expired_at", "lt", new Date().toISOString());
+                .not("expired_at", "lt", new Date().toISOString())
+                .not("is_sold", "eq", true);
 
             if (listingsError) throw listingsError;
 
