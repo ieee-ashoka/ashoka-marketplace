@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
     Input,
@@ -69,7 +69,7 @@ const SORT_OPTIONS = [
     { key: "name_desc", label: "Name: Z to A" },
 ];
 
-export default function BrowsePage() {
+function BrowseContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const pathname = usePathname();
@@ -729,5 +729,17 @@ export default function BrowsePage() {
                 </ModalContent>
             </Modal>
         </div>
+    );
+}
+
+export default function BrowsePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <Spinner size="lg" color="primary" />
+            </div>
+        }>
+            <BrowseContent />
+        </Suspense>
     );
 }

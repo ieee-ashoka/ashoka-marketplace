@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Tables } from "@/types/database.types";
 import { formatDistanceToNow } from "date-fns";
 import { createClient } from "@/utils/supabase/client";
+import { Heart } from "lucide-react";
 
 // Enhanced product type that can handle both old and new category formats
 interface ProductWithCategory extends Tables<"listings"> {
@@ -17,14 +18,16 @@ type ProductCardProps = React.HTMLAttributes<HTMLDivElement> & {
   showActive?: boolean;
   product: ProductWithCategory;
   actions?: React.ReactNode; // New prop for custom actions
+  onWishlistChange?: () => void; // Callback when wishlist state changes
+  isInWishlist?: boolean; // Whether the item is in the wishlist
 };
 
-export default function ProductCard({ isActive, showActive, product, className, actions }: ProductCardProps) {
+export default function ProductCard({ isActive, showActive, product, className, actions, onWishlistChange, isInWishlist }: ProductCardProps) {
   const supabase = createClient();
-  
-    const [interestedCount, setInterestedCount] = React.useState<number>(0);
-  
-  async function getInterestedCount(listingId: string | number): Promise<number> {
+
+  const [interestedCount, setInterestedCount] = React.useState<number>(0);
+
+  const getInterestedCount = React.useCallback(async (listingId: string | number): Promise<number> => {
     const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
 
     const { data, error } = await supabase
@@ -39,9 +42,7 @@ export default function ProductCard({ isActive, showActive, product, className, 
     }
 
     return data.interested.length;
-  }
-
-  // Format the price with proper currency symbol
+  }, [supabase]);  // Format the price with proper currency symbol
   const formattedPrice = product.price
     ? `₹${product.price.toLocaleString("en-IN")}`
     : "Price on request";
@@ -68,7 +69,7 @@ export default function ProductCard({ isActive, showActive, product, className, 
     }
 
     fetchInterestedCount();
-  }, [product.id]);
+  }, [product.id, getInterestedCount]);
 
   return (
     <Card
@@ -104,6 +105,20 @@ export default function ProductCard({ isActive, showActive, product, className, 
           >
             {isActive ? "Active" : "Expired"}
           </Chip>
+        )}
+        {/* Wishlist button - only show if onWishlistChange is provided */}
+        {onWishlistChange && (
+          <Button
+            isIconOnly
+            color="danger"
+            variant="flat"
+            size="sm"
+            className={`absolute ${showActive ? 'bottom-2' : 'top-2'} right-2 z-10 bg-white/90 dark:bg-black/90`}
+            onPress={onWishlistChange}
+            aria-label={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+          >
+            <Heart size={18} fill={isInWishlist ? "currentColor" : "none"} />
+          </Button>
         )}
       </div>
 

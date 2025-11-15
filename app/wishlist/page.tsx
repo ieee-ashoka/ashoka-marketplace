@@ -1,0 +1,163 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
+import { Tables } from "@/types/database.types";
+import ProductCard from "@/components/ProductCard";
+import { Button, Spinner } from "@heroui/react";
+import { Heart, ShoppingBag } from "lucide-react";
+import Link from "next/link";
+
+// Enhanced listing type with category details
+interface ListingWithCategory extends Tables<"listings"> {
+    categories?: Tables<"categories"> | null;
+}
+
+interface WishlistItem extends Tables<"wishlist"> {
+    listings?: ListingWithCategory | null;
+}
+
+export default function WishlistPage() {
+    const router = useRouter();
+    const supabase = createClient();
+    const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function fetchWishlist() {
+            try {
+                // Get current user
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+                if (userError || !user) {
+                    // Redirect to login if not authenticated
+                    router.push("/login");
+                    return;
+                }
+
+                setCurrentUserId(user.id);
+
+                // Fetch wishlist with listing details
+                const { data, error } = await supabase
+                    .from("wishlist")
+                    .select(`
+            *,
+            listings (
+              *,
+              categories (
+                id,
+                name,
+                key,
+                icon,
+                color,
+                iconColor
+              )
+            )
+          `)
+                    .eq("user_id", user.id)
+                    .order("created_at", { ascending: false });
+
+                if (error) {
+                    console.error("Error fetching wishlist:", error);
+                    setWishlistItems([]);
+                } else {
+                    // Filter out items where listing is null (deleted listings)
+                    const validItems = (data || []).filter(item => item.listings !== null);
+                    setWishlistItems(validItems);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        fetchWishlist();
+    }, [router, supabase]);
+
+    // Handle removing item from wishlist
+    const handleRemoveFromWishlist = async (wishlistId: number) => {
+        if (!currentUserId) return;
+
+        try {
+            const { error } = await supabase
+                .from("wishlist")
+                .delete()
+                .eq("id", wishlistId);
+
+            if (error) {
+                console.error("Error removing from wishlist:", error);
+                return;
+            }
+
+            // Update local state
+            setWishlistItems(prev => prev.filter(item => item.id !== wishlistId));
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <Spinner size="lg" color="primary" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-background">
+            <div className="max-w-7xl mx-auto px-4 py-8">
+                {/* Header */}
+                <div className="mb-8">
+                    <div className="flex items-center gap-3 mb-2">
+                        <Heart className="h-8 w-8 text-red-500" fill="currentColor" />
+                        <h1 className="text-3xl font-bold text-foreground">My Wishlist</h1>
+                    </div>
+                    <p className="text-foreground-500">
+                        {wishlistItems.length} {wishlistItems.length === 1 ? 'item' : 'items'} saved
+                    </p>
+                </div>
+
+                {/* Wishlist Items */}
+                {wishlistItems.length === 0 ? (
+                    <div className="text-center py-16">
+                        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-default-100 mb-6">
+                            <Heart className="h-12 w-12 text-default-400" />
+                        </div>
+                        <h2 className="text-2xl font-semibold text-foreground mb-2">
+                            Your wishlist is empty
+                        </h2>
+                        <p className="text-foreground-500 mb-6 max-w-md mx-auto">
+                            Start adding items you love to your wishlist. Browse our marketplace to discover amazing deals!
+                        </p>
+                        <Button
+                            as={Link}
+                            href="/browse"
+                            color="primary"
+                            size="lg"
+                            startContent={<ShoppingBag size={20} />}
+                        >
+                            Browse Marketplace
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {wishlistItems.map((item) => (
+                            item.listings && (
+                                <ProductCard
+                                    key={item.id}
+                                    product={item.listings as ListingWithCategory}
+                                    onWishlistChange={() => handleRemoveFromWishlist(item.id)}
+                                    isInWishlist={true}
+                                />
+                            )
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
