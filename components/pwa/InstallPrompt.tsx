@@ -105,6 +105,7 @@ export default function InstallPrompt() {
 
     const handleDismiss = () => {
         setShowPrompt(false);
+        setDeferredPrompt(null);
         localStorage.setItem("pwa-install-dismissed", new Date().toISOString());
     };
 
@@ -112,11 +113,13 @@ export default function InstallPrompt() {
     if (isInstalled) return null;
 
     // If there's no beforeinstallprompt (iOS Safari), show iOS-specific help
-    const isiOSNoPrompt = !deferredPrompt && /iphone|ipad|ipod/i.test(navigator.userAgent) && !isInstalled;
+    // But only if we haven't dismissed and showPrompt is true
+    const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isiOSNoPrompt = !deferredPrompt && isiOS && !isInstalled && showPrompt;
 
     return (
         <Modal
-            isOpen={showPrompt || isiOSNoPrompt}
+            isOpen={showPrompt && (deferredPrompt !== null || isiOSNoPrompt)}
             onClose={handleDismiss}
             placement="auto"
             backdrop="blur"
