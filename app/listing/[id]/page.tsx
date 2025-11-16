@@ -176,8 +176,7 @@ export default function ListingPage() {
           seller.email || '',
           seller.name || 'Seller',
           userName,
-          userEmail,
-          false
+          userEmail
         );
 
         // Update local state

@@ -37,8 +37,7 @@ export const handleSend = async (
   seller: string,
   sellerName: string,
   userName: string,
-  userEmail: string,
-  notinterested = false
+  userEmail: string
 ): Promise<boolean> => {
   const userdata = await getCurrentUser();
   if (!userdata?.id) {
@@ -52,7 +51,6 @@ export const handleSend = async (
     subject: name,
     fromName: userName,
     fromEmail: userEmail,
-    notin: notinterested,
   };
 
   console.log("Sending email with data:", data_);

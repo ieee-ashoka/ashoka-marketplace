@@ -1,9 +1,10 @@
 import { google } from "googleapis";
+import { render } from "@react-email/components";
+import InterestedNotificationEmail from "@/emails/interested-notification";
 
 export async function POST(req: Request) {
   try {
-    const { to, toName, subject, fromName, fromEmail, notin } =
-      await req.json();
+    const { to, toName, subject, fromName, fromEmail } = await req.json();
 
     // Validate input
     if (!to || !subject || !fromName || !fromEmail) {
@@ -57,21 +58,23 @@ export async function POST(req: Request) {
     const marketplaceEmail = "ieee.asb@ashoka.edu.in";
     const replyTo = `${fromName} <${fromEmail}>`;
 
-    const rawMessage = !notin
-      ? createMessage({
-          to: formattedTo,
-          from: `Ashoka Marketplace <${marketplaceEmail}>`,
-          replyTo: replyTo,
-          subject: `Interest in purchase of ${subject} | Ashoka Marketplace`,
-          body: `Greetings from IEEE Ashoka. There's an update on the interest for your listing '${subject}'.\n\n${fromName} (${fromEmail}) is interested in purchasing it. View more on the listings page.\n\nYou can reply to this email to contact the buyer directly.\n\nCiao! 💰🪙 💸 🤑 💳 💶`,
-        })
-      : createMessage({
-          to: formattedTo,
-          from: `Ashoka Marketplace <${marketplaceEmail}>`,
-          replyTo: replyTo,
-          subject: `Withdrawal of Interest in purchase of ${subject} | Ashoka Marketplace`,
-          body: `Greetings from IEEE Ashoka. There's an update on the interest for your listing '${subject}'.\n\n${fromName} (${fromEmail}) is no longer interested in purchasing it. View more on the listings page.\n\nCiao! 💰🪙 💸 🤑 💳 💶`,
-        });
+    // Generate HTML email using React Email template
+    const emailHtml = await render(
+      InterestedNotificationEmail({
+        listingName: subject,
+        buyerName: fromName,
+        buyerEmail: fromEmail,
+        sellerName: toName || "Seller",
+      })
+    );
+
+    const rawMessage = createMessage({
+      to: formattedTo,
+      from: `Ashoka Marketplace <${marketplaceEmail}>`,
+      replyTo: replyTo,
+      subject: `Interest in purchase of ${subject} | Ashoka Marketplace`,
+      html: emailHtml,
+    });
 
     const result = await gmail.users.messages.send({
       userId: "me",
@@ -131,13 +134,13 @@ function createMessage({
   from,
   replyTo,
   subject,
-  body,
+  html,
 }: {
   to: string;
   from: string;
   replyTo?: string;
   subject: string;
-  body: string;
+  html: string;
 }) {
   const headers = [
     `To: ${to}`,
@@ -145,9 +148,9 @@ function createMessage({
     ...(replyTo ? [`Reply-To: ${replyTo}`] : []),
     `Subject: ${subject}`,
     "MIME-Version: 1.0",
-    'Content-Type: text/plain; charset="UTF-8"',
+    'Content-Type: text/html; charset="UTF-8"',
     "",
-    body,
+    html,
   ];
 
   const message = headers.join("\n");
