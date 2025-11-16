@@ -1,6 +1,6 @@
 {
   "name": "Ashoka Marketplace - Campus Second-Hand Trading",
-  "short_name": "Ashoka Market",
+  "short_name": "Ashoka Marketplace",
   "description": "A marketplace for Ashoka University students to buy and sell second-hand items on campus.",
   "start_url": "/",
   "display": "standalone",
