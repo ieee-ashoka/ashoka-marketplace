@@ -63,7 +63,6 @@ export async function POST(req: Request) {
       InterestedNotificationEmail({
         listingName: subject,
         buyerName: fromName,
-        buyerEmail: fromEmail,
         sellerName: toName || "Seller",
       })
     );
