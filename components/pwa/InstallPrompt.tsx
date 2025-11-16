@@ -129,7 +129,7 @@ export default function InstallPrompt() {
                     <div className="relative mb-2">
                         <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
                             <Image
-                                src="/icons/icon-192x192.png"
+                                src="/images/android-chrome-192x192.png"
                                 alt="Ashoka Marketplace"
                                 width={64}
                                 height={64}

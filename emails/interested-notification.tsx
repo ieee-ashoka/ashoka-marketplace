@@ -38,11 +38,11 @@ export const InterestedNotificationEmail = ({
                         {/* Main Card */}
                         <Section className="bg-white rounded-lg shadow-md overflow-hidden">
                             {/* Header with gradient */}
-                            <Section className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-8 text-center">
-                                <Heading className="text-white text-2xl font-bold m-0">
+                            <Section className="px-6 py-8 text-center">
+                                <Heading className="text-black text-2xl font-bold m-0">
                                     🎉 Great News!
                                 </Heading>
-                                <Text className="text-blue-100 text-sm mt-2 m-0">
+                                <Text className="text-blue-800 text-sm mt-2 m-0">
                                     Someone is interested in your listing
                                 </Text>
                             </Section>

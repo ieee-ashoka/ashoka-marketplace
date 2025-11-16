@@ -547,7 +547,7 @@ export default function ListingPage() {
           <div className="w-full lg:w-7/12">
             <div className="relative">
               {/* Main Image */}
-              <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+              <div className="relative overflow-hidden rounded-lg">
                 <Image
                   src={listingImages[selectedImageIndex]}
                   alt={listing.name || "Product Image"}

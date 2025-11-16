@@ -63,7 +63,14 @@ export default function AppNavbar() {
     <Navbar maxWidth="xl" isBlurred className="hidden md:flex backdrop-blur-[24px]">
       <NavbarContent>
         <NavbarBrand>
-          <Link href="/" className="flex items-center">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/images/marketplace-logo.png"
+              alt="Ashoka Marketplace"
+              width={75}
+              height={75}
+              className="rounded-lg"
+            />
             <p className="font-bold text-indigo-400 text-xl">
               Ashoka Marketplace
             </p>

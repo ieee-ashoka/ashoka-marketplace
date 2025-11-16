@@ -5,7 +5,6 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [{ hostname: "**" }],
   },
-  reactStrictMode: true,
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback.fs = false

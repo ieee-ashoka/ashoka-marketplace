@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
 import { User as UserIcon } from "lucide-react";
 import { AnimatedThemeToggler } from "@/components/ui/theme-switcher";
@@ -29,9 +30,13 @@ const Topbar = () => {
                             transition={{ duration: 0.5 }}
                             className="flex items-center"
                         >
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                                <span className="text-indigo-600 font-bold text-3xl">M</span>
-                            </div>
+                            <Image
+                                src="/images/marketplace-logo.png"
+                                alt="Ashoka Marketplace"
+                                width={70}
+                                height={70}
+                                className="rounded-lg"
+                            />
                         </motion.div>
                     </Link>
                 </div>
