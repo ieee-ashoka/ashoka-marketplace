@@ -181,6 +181,44 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: number
+          listing_id: number | null
+          reason: string | null
+          reporter_id: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: number
+          listing_id?: number | null
+          reason?: string | null
+          reporter_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: number
+          listing_id?: number | null
+          reason?: string | null
+          reporter_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wishlist: {
         Row: {
           created_at: string

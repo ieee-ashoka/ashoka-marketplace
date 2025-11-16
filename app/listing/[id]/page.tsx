@@ -19,7 +19,11 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-  ModalContent
+  ModalContent,
+  Textarea,
+  Select,
+  SelectItem,
+  Alert,
 } from "@heroui/react";
 import {
   Heart,
@@ -50,6 +54,9 @@ import {
   getInterestedCount,
   addInterestedUser,
   removeInterestedUser,
+  reportListing,
+  hasUserReportedListing,
+  type ReportReason,
 } from "./helpers";
 
 // Use types from the database schema
@@ -68,10 +75,14 @@ export default function ListingPage() {
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [similarListings, setSimilarListings] = useState<ListingWithCategory[]>([]);
   const [currentUser, setCurrentUser] = useState<{ id: string; user: Record<string, unknown> } | null>(null);
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const { isOpen: isReportOpen, onOpen: onReportOpen, onOpenChange: onReportOpenChange } = useDisclosure();
   const [interested, setInterested] = useState(false);
   const [interestedCount, setInterestedCount] = useState(0);
   const [isProcessingInterest, setIsProcessingInterest] = useState(false);
+  const [reportReason, setReportReason] = useState<ReportReason | "">("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [alertMessage, setAlertMessage] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null);
 
   useEffect(() => {
     async function fetchListingData() {
@@ -183,10 +194,13 @@ export default function ListingPage() {
         setInterested(true);
         setInterestedCount(prev => prev + 1);
 
-        // Show modal
-        onOpen();
+        // Show success alert
+        setAlertMessage({ type: 'success', message: 'Successfully marked as interested! The seller has been notified.' });
+        setTimeout(() => setAlertMessage(null), 5000);
       } else {
         console.error("Failed to mark as interested");
+        setAlertMessage({ type: 'error', message: 'Failed to mark as interested. Please try again.' });
+        setTimeout(() => setAlertMessage(null), 5000);
       }
     } finally {
       setIsProcessingInterest(false);
@@ -208,10 +222,13 @@ export default function ListingPage() {
         setInterested(false);
         setInterestedCount(prev => Math.max(0, prev - 1));
 
-        // Show modal
-        onOpen();
+        // Show success alert
+        setAlertMessage({ type: 'success', message: 'Successfully removed from interested list.' });
+        setTimeout(() => setAlertMessage(null), 5000);
       } else {
         console.error("Failed to remove interest");
+        setAlertMessage({ type: 'error', message: 'Failed to remove interest. Please try again.' });
+        setTimeout(() => setAlertMessage(null), 5000);
       }
     } finally {
       setIsProcessingInterest(false);
@@ -367,28 +384,144 @@ export default function ListingPage() {
 
   return (
     <>
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+      {/* Alert Message */}
+      {alertMessage && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Alert
+            color={
+              alertMessage.type === 'success' ? 'success' :
+                alertMessage.type === 'warning' ? 'warning' :
+                  'danger'
+            }
+            variant="bordered"
+            onClose={() => setAlertMessage(null)}
+          >
+            {alertMessage.message}
+          </Alert>
+        </div>
+      )}
+
+      {/* Report Listing Modal */}
+      <Modal isOpen={isReportOpen} onOpenChange={onReportOpenChange} size="2xl">
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1">Marked as {!interested ? "not " : ""}Interested</ModalHeader>
+              <ModalHeader className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <Flag className="text-danger" size={24} />
+                  <span>Report Listing</span>
+                </div>
+              </ModalHeader>
               <ModalBody>
-                <p>
-                  The seller has been notified of your{!interested ? " withdrawal of" : ""} interest. {interested ? "They will reach out to you via email." : ""}
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Please help us understand what&apos;s wrong with this listing. Your report will be reviewed by our team.
                 </p>
-                <p>
-                  {interested ? "If the product has a price on request, it will be sent to you shortly." : ""}
+
+                <Select
+                  label="Reason for reporting"
+                  placeholder="Select a reason"
+                  selectedKeys={reportReason ? [reportReason] : []}
+                  onSelectionChange={(keys) => {
+                    const selected = Array.from(keys)[0];
+                    setReportReason(selected as ReportReason);
+                  }}
+                  isRequired
+                >
+                  <SelectItem key="scam">
+                    Scam or fraud
+                  </SelectItem>
+                  <SelectItem key="inappropriate">
+                    Inappropriate content
+                  </SelectItem>
+                  <SelectItem key="duplicate">
+                    Duplicate listing
+                  </SelectItem>
+                  <SelectItem key="misleading">
+                    Misleading information
+                  </SelectItem>
+                  <SelectItem key="prohibited">
+                    Prohibited item
+                  </SelectItem>
+                  <SelectItem key="other">
+                    Other
+                  </SelectItem>
+                </Select>
+
+                <Textarea
+                  label="Additional details (optional)"
+                  placeholder="Please provide more information about why you're reporting this listing..."
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  minRows={4}
+                />
+
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Reports are confidential. The seller will not be notified of who reported the listing.
                 </p>
               </ModalBody>
               <ModalFooter>
-                <Button color="danger" variant="light" onPress={onClose}>
-                  Close
+                <Button color="default" variant="light" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  color="danger"
+                  isLoading={isSubmittingReport}
+                  onPress={async () => {
+                    if (!reportReason || !currentUser || !listing) return;
+
+                    setIsSubmittingReport(true);
+
+                    // Check if user already reported this listing
+                    const alreadyReported = await hasUserReportedListing(listing.id, currentUser.id);
+
+                    if (alreadyReported) {
+                      setAlertMessage({
+                        type: 'warning',
+                        message: 'You have already reported this listing.'
+                      });
+                      setTimeout(() => setAlertMessage(null), 5000);
+                      setIsSubmittingReport(false);
+                      onClose();
+                      return;
+                    }
+
+                    // Submit the report
+                    const result = await reportListing(
+                      listing.id,
+                      currentUser.id,
+                      reportReason,
+                      reportDetails || undefined
+                    );
+
+                    if (result.success) {
+                      setAlertMessage({
+                        type: 'success',
+                        message: 'Thank you for your report. We will review it shortly.'
+                      });
+                      setTimeout(() => setAlertMessage(null), 5000);
+                      setReportReason("");
+                      setReportDetails("");
+                      onClose();
+                    } else {
+                      setAlertMessage({
+                        type: 'error',
+                        message: result.error || 'Failed to submit report. Please try again.'
+                      });
+                      setTimeout(() => setAlertMessage(null), 5000);
+                    }
+
+                    setIsSubmittingReport(false);
+                  }}
+                  isDisabled={!reportReason}
+                >
+                  Submit Report
                 </Button>
               </ModalFooter>
             </>
           )}
         </ModalContent>
       </Modal>
+
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Rest of the component remains the same */}
         {/* Breadcrumb */}
@@ -630,8 +763,7 @@ export default function ListingPage() {
                   variant="light"
                   color="danger"
                   size="sm"
-                  as={Link}
-                  href={`/report?listing=${listing.id}`}
+                  onPress={onReportOpen}
                   startContent={<Flag size={16} />}
                   className="text-xs"
                 >

@@ -316,3 +316,74 @@ export async function removeInterestedUser(
 
   return true;
 }
+
+/**
+ * Report reasons type from database
+ */
+export type ReportReason =
+  | "scam"
+  | "inappropriate"
+  | "duplicate"
+  | "misleading"
+  | "prohibited"
+  | "other";
+
+/**
+ * Submit a report for a listing
+ */
+export async function reportListing(
+  listingId: number,
+  reporterId: string,
+  reason: ReportReason,
+  details?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase.from("reports").insert({
+      listing_id: listingId,
+      reporter_id: reporterId,
+      reason: reason,
+      details: details || null,
+      status: "pending",
+    });
+
+    if (error) {
+      console.error("Error submitting report:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Exception submitting report:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+}
+
+/**
+ * Check if a user has already reported a specific listing
+ */
+export async function hasUserReportedListing(
+  listingId: number,
+  userId: string
+): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from("reports")
+      .select("id")
+      .eq("listing_id", listingId)
+      .eq("reporter_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error checking existing report:", error);
+      return false;
+    }
+
+    return !!data;
+  } catch (error) {
+    console.error("Exception checking existing report:", error);
+    return false;
+  }
+}
