@@ -177,30 +177,31 @@ export default function InstallPrompt() {
                     {deferredPrompt ? (
                         <>
                             <Button
+                                variant="light"
+                                size="md"
+                                color="danger"
+                                onPress={handleDismiss}
+                                className="w-full"
+                            >
+                                Not Now
+                            </Button>
+                            <Button
                                 color="primary"
-                                size="lg"
+                                size="md"
                                 onPress={handleInstallClick}
                                 className="w-full font-semibold"
                                 startContent={<Download className="h-5 w-5" />}
                             >
                                 Get App
                             </Button>
-                            <Button
-                                variant="light"
-                                size="sm"
-                                color="danger"
-                                onPress={handleDismiss}
-                                className="w-full text-foreground-500"
-                            >
-                                Not Now
-                            </Button>
                         </>
                     ) : (
                         <Button
                             variant="light"
-                            size="sm"
+                            size="md"
+                            color="danger"
                             onPress={handleDismiss}
-                            className="w-full text-foreground-500"
+                            className="w-full"
                         >
                             Close
                         </Button>
