@@ -23,7 +23,6 @@ import {
   Textarea,
   Select,
   SelectItem,
-  Alert,
 } from "@heroui/react";
 import {
   Heart,
@@ -82,7 +81,6 @@ export default function ListingPage() {
   const [reportReason, setReportReason] = useState<ReportReason | "">("");
   const [reportDetails, setReportDetails] = useState("");
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-  const [alertMessage, setAlertMessage] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null);
 
   useEffect(() => {
     async function fetchListingData() {
@@ -193,14 +191,6 @@ export default function ListingPage() {
         // Update local state
         setInterested(true);
         setInterestedCount(prev => prev + 1);
-
-        // Show success alert
-        setAlertMessage({ type: 'success', message: 'Successfully marked as interested! The seller has been notified.' });
-        setTimeout(() => setAlertMessage(null), 5000);
-      } else {
-        console.error("Failed to mark as interested");
-        setAlertMessage({ type: 'error', message: 'Failed to mark as interested. Please try again.' });
-        setTimeout(() => setAlertMessage(null), 5000);
       }
     } finally {
       setIsProcessingInterest(false);
@@ -221,14 +211,6 @@ export default function ListingPage() {
         // Update local state (no email sent for uninterested)
         setInterested(false);
         setInterestedCount(prev => Math.max(0, prev - 1));
-
-        // Show success alert
-        setAlertMessage({ type: 'success', message: 'Successfully removed from interested list.' });
-        setTimeout(() => setAlertMessage(null), 5000);
-      } else {
-        console.error("Failed to remove interest");
-        setAlertMessage({ type: 'error', message: 'Failed to remove interest. Please try again.' });
-        setTimeout(() => setAlertMessage(null), 5000);
       }
     } finally {
       setIsProcessingInterest(false);
@@ -384,22 +366,6 @@ export default function ListingPage() {
 
   return (
     <>
-      {/* Alert Message */}
-      {alertMessage && (
-        <div className="fixed top-4 right-4 z-50 max-w-md">
-          <Alert
-            color={
-              alertMessage.type === 'success' ? 'success' :
-                alertMessage.type === 'warning' ? 'warning' :
-                  'danger'
-            }
-            variant="bordered"
-            onClose={() => setAlertMessage(null)}
-          >
-            {alertMessage.message}
-          </Alert>
-        </div>
-      )}
 
       {/* Report Listing Modal */}
       <Modal isOpen={isReportOpen} onOpenChange={onReportOpenChange} size="2xl">
@@ -475,11 +441,6 @@ export default function ListingPage() {
                     const alreadyReported = await hasUserReportedListing(listing.id, currentUser.id);
 
                     if (alreadyReported) {
-                      setAlertMessage({
-                        type: 'warning',
-                        message: 'You have already reported this listing.'
-                      });
-                      setTimeout(() => setAlertMessage(null), 5000);
                       setIsSubmittingReport(false);
                       onClose();
                       return;
@@ -494,20 +455,10 @@ export default function ListingPage() {
                     );
 
                     if (result.success) {
-                      setAlertMessage({
-                        type: 'success',
-                        message: 'Thank you for your report. We will review it shortly.'
-                      });
-                      setTimeout(() => setAlertMessage(null), 5000);
                       setReportReason("");
                       setReportDetails("");
                       onClose();
                     } else {
-                      setAlertMessage({
-                        type: 'error',
-                        message: result.error || 'Failed to submit report. Please try again.'
-                      });
-                      setTimeout(() => setAlertMessage(null), 5000);
                     }
 
                     setIsSubmittingReport(false);
