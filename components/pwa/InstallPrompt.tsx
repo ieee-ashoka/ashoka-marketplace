@@ -10,7 +10,7 @@ import {
     Button,
     Image
 } from "@heroui/react";
-import { Download, Smartphone, Zap, Bell } from "lucide-react";
+import { Download, Zap, Bell } from "lucide-react";
 
 /** More complete typing for the install prompt event */
 interface BeforeInstallPromptEvent extends Event {
@@ -124,12 +124,12 @@ export default function InstallPrompt() {
             <ModalContent>
                 <ModalHeader className="flex flex-col gap-1 items-center pt-6">
                     <div className="relative mb-2">
-                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                        <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg">
                             <Image
                                 src="/images/android-chrome-192x192.png"
                                 alt="Ashoka Marketplace"
-                                width={64}
-                                height={64}
+                                width={100}
+                                height={100}
                                 className="rounded-xl"
                             />
                         </div>
@@ -153,12 +153,6 @@ export default function InstallPrompt() {
                         </div>
 
                         <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                                <Smartphone className="h-5 w-5 text-green-600 dark:text-green-400" />
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-3">
                             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center">
                                 <Bell className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                             </div>
@@ -178,7 +172,7 @@ export default function InstallPrompt() {
                         )}
                     </div>
                 </ModalBody>
-                <ModalFooter className="flex-col gap-2 pb-6">
+                <ModalFooter className="flex-row gap-2 pb-6">
                     {/* If the browser supports the prompt, show the button; otherwise show a dismissible help UI */}
                     {deferredPrompt ? (
                         <>
@@ -194,6 +188,7 @@ export default function InstallPrompt() {
                             <Button
                                 variant="light"
                                 size="sm"
+                                color="danger"
                                 onPress={handleDismiss}
                                 className="w-full text-foreground-500"
                             >
