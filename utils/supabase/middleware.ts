@@ -34,9 +34,20 @@ export async function updateSession(request: NextRequest) {
   // issues with users being randomly logged out.
   // const startTime = Date.now();
 
-  const { data } = await supabase.auth.getClaims();
+  let user = null;
 
-  const user = data?.claims || null;
+  try {
+    const { data, error } = await supabase.auth.getClaims();
+
+    if (error) {
+      console.error("Error getting claims in middleware:", error);
+    } else {
+      user = data?.claims || null;
+    }
+  } catch (error) {
+    console.error("Exception in getClaims:", error);
+    // Continue without user - will redirect to home if accessing protected pages
+  }
 
   const protectedPages = [
     "/listing",

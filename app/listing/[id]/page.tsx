@@ -47,7 +47,9 @@ import {
   ListingWithCategory,
   handleSend,
   isInterested,
-  getInterestedCount
+  getInterestedCount,
+  addInterestedUser,
+  removeInterestedUser,
 } from "./helpers";
 
 // Use types from the database schema
@@ -65,10 +67,11 @@ export default function ListingPage() {
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [similarListings, setSimilarListings] = useState<ListingWithCategory[]>([]);
-  const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; user: Record<string, unknown> } | null>(null);
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const [interested, setInterested] = useState(false);
   const [interestedCount, setInterestedCount] = useState(0);
+  const [isProcessingInterest, setIsProcessingInterest] = useState(false);
 
   useEffect(() => {
     async function fetchListingData() {
@@ -93,6 +96,10 @@ export default function ListingPage() {
         if (user) {
           const inWishlist = await isListingInWishlist(user.id, listingData.id);
           setIsInWishlist(inWishlist);
+
+          // Check if user is interested
+          const userInterested = await isInterested(listingData.id, user.id);
+          setInterested(userInterested);
         }
 
         // Fetch seller profile
@@ -106,6 +113,10 @@ export default function ListingPage() {
           const similarItems = await getSimilarListings(listingData.category, listingData.id);
           setSimilarListings(similarItems);
         }
+
+        // Fetch interested count
+        const count = await getInterestedCount(listingData.id);
+        setInterestedCount(count);
       } catch (error) {
         console.error("Error fetching listing:", error);
       } finally {
@@ -115,43 +126,6 @@ export default function ListingPage() {
 
     fetchListingData();
   }, [listingId, router]);
-
-  useEffect(() => {
-    if (!listing || !currentUser) {
-      setInterested(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const value = await isInterested(listing.id, currentUser.id);
-        if (!cancelled) setInterested(!!value);
-      } catch (err) {
-        console.error("Error checking interest:", err);
-        if (!cancelled) setInterested(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [listing?.id, currentUser?.id]);
-
-  useEffect(() => {
-    if (!listing) {
-      setInterestedCount(0);
-      return;
-    }
-
-    const fetchCount = async () => {
-      const count = await getInterestedCount(listing.id);
-      setInterestedCount(count);
-    }
-
-    fetchCount();
-  }, [listing?.id]);
 
   // Toggle wishlist function
   async function toggleWishlist() {
@@ -182,16 +156,159 @@ export default function ListingPage() {
   }
 
   async function markInterested() {
-    // TODO: Track interested on supabase
-    handleSend(listing?.name || '', seller?.email || '', false);
-    onOpen();
+    if (!currentUser || !listing || !seller || isProcessingInterest) return;
+
+    setIsProcessingInterest(true);
+    console.log("Marking interested");
+
+    try {
+      // Add to database
+      const dbSuccess = await addInterestedUser(listing.id, currentUser.id);
+
+      if (dbSuccess) {
+        // Get user info for email
+        const userName = (currentUser.user?.user_metadata as { full_name?: string })?.full_name || 'Ashoka User';
+        const userEmail = (currentUser.user as { email?: string })?.email || '';
+
+        // Send email notification
+        await handleSend(
+          listing.name || '',
+          seller.email || '',
+          seller.name || 'Seller',
+          userName,
+          userEmail,
+          false
+        );
+
+        // Update local state
+        setInterested(true);
+        setInterestedCount(prev => prev + 1);
+
+        // Show modal
+        onOpen();
+      } else {
+        console.error("Failed to mark as interested");
+      }
+    } finally {
+      setIsProcessingInterest(false);
+    }
   }
 
   async function markNotInterested() {
-    // Vice-verca
-    handleSend(listing?.name || '', seller?.email || '', true);
-    onOpen();
+    if (!currentUser || !listing || !seller || isProcessingInterest) return;
+
+    setIsProcessingInterest(true);
+    console.log("Removing interest");
+
+    try {
+      // Remove from database
+      const dbSuccess = await removeInterestedUser(listing.id, currentUser.id);
+
+      if (dbSuccess) {
+        // Update local state (no email sent for uninterested)
+        setInterested(false);
+        setInterestedCount(prev => Math.max(0, prev - 1));
+
+        // Show modal
+        onOpen();
+      } else {
+        console.error("Failed to remove interest");
+      }
+    } finally {
+      setIsProcessingInterest(false);
+    }
   }
+
+  // Reusable Action Buttons Component
+  const ActionButtons = ({ isMobile = false }: { isMobile?: boolean }) => {
+    if (isOwner) return null;
+
+    return (
+      <div className={`flex gap-2 ${isMobile ? 'mt-4 lg:hidden' : 'hidden lg:flex mb-6'}`}>
+        <Button
+          className="flex-1"
+          color={!interested ? "secondary" : "warning"}
+          size={isMobile ? "md" : "lg"}
+          variant="flat"
+          isDisabled={!isActive}
+          isLoading={isProcessingInterest}
+          onPress={() => {
+            if (!interested) {
+              markInterested();
+            } else {
+              markNotInterested();
+            }
+          }}
+          startContent={!isProcessingInterest && <ShoppingBag size={isMobile ? 18 : 20} />}
+        >
+          {!interested ? "Mark Interested" : "Mark Not Interested"}
+        </Button>
+        {isMobile ? (
+          <>
+            <Button
+              isIconOnly
+              variant="flat"
+              color={isInWishlist ? "danger" : "default"}
+              onPress={toggleWishlist}
+              isLoading={isAddingToWishlist}
+            >
+              <Heart fill={isInWishlist ? "currentColor" : "none"} />
+            </Button>
+            <Button
+              isIconOnly
+              variant="flat"
+              onPress={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: listing?.name || "Check out this listing",
+                    text: listing?.description || "Found this on Ashoka Marketplace",
+                    url: window.location.href,
+                  });
+                } else {
+                  navigator.clipboard.writeText(window.location.href);
+                }
+              }}
+            >
+              <Share2 />
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="flat"
+              color={isInWishlist ? "danger" : "default"}
+              onPress={toggleWishlist}
+              isLoading={isAddingToWishlist}
+              startContent={<Heart fill={isInWishlist ? "currentColor" : "none"} />}
+              size="lg"
+            >
+              {isInWishlist ? "Saved" : "Save"}
+            </Button>
+            <Tooltip content="Share listing">
+              <Button
+                isIconOnly
+                variant="flat"
+                size="lg"
+                onPress={() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: listing?.name || "Check out this listing",
+                      text: listing?.description || "Found this on Ashoka Marketplace",
+                      url: window.location.href,
+                    });
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                  }
+                }}
+              >
+                <Share2 size={20} />
+              </Button>
+            </Tooltip>
+          </>
+        )}
+      </div>
+    );
+  };
 
   // Loading skeleton
   if (isLoading) {
@@ -363,55 +480,7 @@ export default function ListingPage() {
             </div>
 
             {/* Mobile: Action Buttons */}
-            {!isOwner && (
-              <div className="flex mt-4 gap-2 lg:hidden">
-                <Button
-                  className="flex-1"
-                  color={!interested ? "secondary" : "warning"}
-                  variant="flat"
-                  isDisabled={!isActive}
-                  onPress={() => {
-                    if (!interested) {
-                      markInterested();
-                      setInterested(true);
-                    } else {
-                      markNotInterested();
-                      setInterested(false);
-                    }
-                  }}
-                  startContent={<ShoppingBag size={18} />}
-                >
-                  {!interested ? "Mark Interested" : "Mark Not Interested"}
-                </Button>
-                <Button
-                  isIconOnly
-                  variant="flat"
-                  color={isInWishlist ? "danger" : "default"}
-                  onPress={toggleWishlist}
-                  isLoading={isAddingToWishlist}
-                >
-                  <Heart fill={isInWishlist ? "currentColor" : "none"} />
-                </Button>
-                <Button
-                  isIconOnly
-                  variant="flat"
-                  onPress={() => {
-                    if (navigator.share) {
-                      navigator.share({
-                        title: listing.name || "Check out this listing",
-                        text: listing.description || "Found this on Ashoka Marketplace",
-                        url: window.location.href,
-                      });
-                    } else {
-                      navigator.clipboard.writeText(window.location.href);
-                      // Would add toast notification here
-                    }
-                  }}
-                >
-                  <Share2 />
-                </Button>
-              </div>
-            )}
+            <ActionButtons isMobile={true} />
 
             {/* Description Section - Mobile only */}
             <div className="mt-6 lg:hidden">
@@ -506,58 +575,7 @@ export default function ListingPage() {
             )}
 
             {/* Desktop: Action Buttons */}
-            {!isOwner && (
-              <div className="hidden lg:flex gap-2 mb-6">
-                <Button
-                  className="flex-1"
-                  color={!interested ? "secondary" : "warning"}
-                  size="lg"
-                  isDisabled={!isActive}
-                  onPress={() => {
-                    if (!interested) {
-                      markInterested();
-                      setInterested(true)
-                    } else {
-                      markNotInterested();
-                      setInterested(false)
-                    }
-                  }}
-                  startContent={<ShoppingBag size={20} />}
-                >
-                  {!interested ? "Mark Interested" : "Mark Not Interested"}
-                </Button>
-                <Button
-                  variant="flat"
-                  color={isInWishlist ? "danger" : "default"}
-                  onPress={toggleWishlist}
-                  startContent={<Heart fill={isInWishlist ? "currentColor" : "none"} />}
-                  size="lg"
-                >
-                  {isInWishlist ? "Saved" : "Save"}
-                </Button>
-                <Tooltip content="Share listing">
-                  <Button
-                    isIconOnly
-                    variant="flat"
-                    size="lg"
-                    onPress={() => {
-                      if (navigator.share) {
-                        navigator.share({
-                          title: listing.name || "Check out this listing",
-                          text: listing.description || "Found this on Ashoka Marketplace",
-                          url: window.location.href,
-                        });
-                      } else {
-                        navigator.clipboard.writeText(window.location.href);
-                        // Would add toast notification here
-                      }
-                    }}
-                  >
-                    <Share2 size={20} />
-                  </Button>
-                </Tooltip>
-              </div>
-            )}
+            <ActionButtons isMobile={false} />
 
             {/* Warning if expired */}
             {!isActive && (

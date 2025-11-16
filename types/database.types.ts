@@ -69,6 +69,35 @@ export type Database = {
         }
         Relationships: []
       }
+      interested: {
+        Row: {
+          created_at: string
+          id: number
+          listing_id: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          listing_id?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          listing_id?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interested_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           category: number
@@ -78,6 +107,7 @@ export type Database = {
           expired_at: string | null
           id: number
           image: string[] | null
+          is_sold: boolean
           name: string | null
           price: number | null
           productAge: number | null
@@ -91,6 +121,7 @@ export type Database = {
           expired_at?: string | null
           id?: number
           image?: string[] | null
+          is_sold?: boolean
           name?: string | null
           price?: number | null
           productAge?: number | null
@@ -104,6 +135,7 @@ export type Database = {
           expired_at?: string | null
           id?: number
           image?: string[] | null
+          is_sold?: boolean
           name?: string | null
           price?: number | null
           productAge?: number | null

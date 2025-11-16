@@ -16,14 +16,19 @@ type BuyerProfile = {
  * Get current user ID from JWT claims
  */
 async function getCurrentUserId(): Promise<string | null> {
-  const { data, error } = await supabase.auth.getClaims();
+  try {
+    const { data, error } = await supabase.auth.getClaims();
 
-  if (error || !data?.claims) {
-    console.error("Error getting user claims:", error);
+    if (error || !data?.claims) {
+      console.error("Error getting user claims:", error);
+      return null;
+    }
+
+    return data.claims.sub || null;
+  } catch (error) {
+    console.error("Exception getting user claims:", error);
     return null;
   }
-
-  return data.claims.sub || null;
 }
 
 export async function getListingBuyers(
@@ -33,27 +38,31 @@ export async function getListingBuyers(
     const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
     const buyers: BuyerProfile[] = [];
 
-    const { data, error } = await supabase
+    // Get all interested users for this listing
+    const { data: interestedData, error } = await supabase
       .from("interested")
-      .select()
-      .eq("listing_id", id)
-      .single();
+      .select("user_id")
+      .eq("listing_id", id);
 
     if (error) {
-      console.error("Error fetching listing:", error);
+      console.error("Error fetching interested users:", error);
       return [];
     }
 
-    if (!data?.interested) {
+    if (!interestedData || interestedData.length === 0) {
       return [];
     }
 
-    for (const userId of data.interested) {
+    // Fetch profile data for each interested user
+    for (const row of interestedData) {
+      if (!row.user_id) continue;
+
       const { data: userData, error: userError } = await supabase
         .from("profiles")
         .select("avatar, name, created_at, user_id")
-        .eq("user_id", userId)
+        .eq("user_id", row.user_id)
         .single();
+
       if (userError) {
         console.error("Error fetching user data:", userError);
         continue;

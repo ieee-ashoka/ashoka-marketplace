@@ -30,18 +30,17 @@ export default function ProductCard({ isActive, showActive, product, className, 
   const getInterestedCount = React.useCallback(async (listingId: string | number): Promise<number> => {
     const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
 
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from("interested")
-      .select()
-      .eq("listing_id", id)
-      .single();
+      .select("*", { count: "exact", head: true })
+      .eq("listing_id", id);
 
     if (error) {
       console.error("Error fetching interested count:", error);
       return 0;
     }
 
-    return data.interested.length;
+    return count || 0;
   }, [supabase]);  // Format the price with proper currency symbol
   const formattedPrice = product.price
     ? `₹${product.price.toLocaleString("en-IN")}`

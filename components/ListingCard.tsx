@@ -25,22 +25,21 @@ export default function ProductCard({ isActive, showActive, product, className, 
 
   const [interestedCount, setInterestedCount] = React.useState<number>(0);
 
-  async function getInterestedCount(listingId: string | number): Promise<number> {
-  const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
+  const getInterestedCount = React.useCallback(async (listingId: string | number): Promise<number> => {
+    const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
 
-  const { data, error } = await supabase
-    .from("interested")
-    .select()
-    .eq("listing_id", id)
-    .single();
+    const { count, error } = await supabase
+      .from("interested")
+      .select("*", { count: "exact", head: true })
+      .eq("listing_id", id);
 
-  if (error) {
-    console.error("Error fetching interested count:", error);
-    return 0;
-  }
+    if (error) {
+      console.error("Error fetching interested count:", error);
+      return 0;
+    }
 
-  return data.interested.length;
-}
+    return count || 0;
+  }, [supabase]);
 
   // Format the price with proper currency symbol
   const formattedPrice = product.price
@@ -69,7 +68,7 @@ export default function ProductCard({ isActive, showActive, product, className, 
     }
 
     fetchInterestedCount();
-  }, [product.id]);
+  }, [product.id, getInterestedCount]);
 
   return (
     <Card
@@ -173,36 +172,36 @@ export default function ProductCard({ isActive, showActive, product, className, 
         {actions ? (
           actions
         ) : (
-            <div className="flex flex-col gap-2 w-full">
-              <div className="flex flex-row gap-2 w-full">
-                <Button
-                    as={Link}
-                    href={`/listing/${product.id}/edit`}
-                    className="w-full min-h-[36px] text-sm sm:text-base"
-                    color="primary"
-                    variant="flat"
-                >
-                    Edit Listing
-                </Button>
-                <Button
-                    onPress={() => { onDelete(); }}
-                    className="w-full min-h-[36px] text-sm sm:text-base"
-                    color="danger"
-                    variant="flat"
-                >
-                    Delete
-                </Button>
-              </div>
+          <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-row gap-2 w-full">
               <Button
-                  as={Link}
-                  href={`/listing/${product.id}/sell`}
-                  className="w-full min-h-[36px] text-sm sm:text-base"
-                  color="success"
-                  variant="flat"
+                as={Link}
+                href={`/listing/${product.id}/edit`}
+                className="w-full min-h-[36px] text-sm sm:text-base"
+                color="primary"
+                variant="flat"
               >
-                  Sell
+                Edit Listing
+              </Button>
+              <Button
+                onPress={() => { onDelete(); }}
+                className="w-full min-h-[36px] text-sm sm:text-base"
+                color="danger"
+                variant="flat"
+              >
+                Delete
               </Button>
             </div>
+            <Button
+              as={Link}
+              href={`/listing/${product.id}/sell`}
+              className="w-full min-h-[36px] text-sm sm:text-base"
+              color="success"
+              variant="flat"
+            >
+              Sell
+            </Button>
+          </div>
         )}
       </CardFooter>
     </Card>
