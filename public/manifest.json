@@ -60,53 +60,19 @@
       "name": "Browse Items",
       "short_name": "Browse",
       "description": "Browse all available marketplace items",
-      "url": "/browse",
-      "icons": [
-        {
-          "src": "/icons/shortcut-browse.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "url": "/browse"
     },
     {
       "name": "Sell Item",
       "short_name": "Sell",
       "description": "Create a new listing to sell an item",
-      "url": "/sell",
-      "icons": [
-        {
-          "src": "/icons/shortcut-sell.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "My Wishlist",
-      "short_name": "Wishlist",
-      "description": "View your saved wishlist items",
-      "url": "/profile?tab=wishlist",
-      "icons": [
-        {
-          "src": "/icons/shortcut-wishlist.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "url": "/sell"
     },
     {
       "name": "My Profile",
       "short_name": "Profile",
       "description": "View your profile and listings",
-      "url": "/profile",
-      "icons": [
-        {
-          "src": "/icons/shortcut-profile.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "url": "/profile"
     }
   ],
   "share_target": {

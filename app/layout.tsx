@@ -24,16 +24,6 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "Ashoka Market",
-    startupImage: [
-      {
-        url: "/icons/apple-touch-icon-180x180.png",
-        media: "(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)",
-      },
-      {
-        url: "/icons/apple-touch-icon-167x167.png",
-        media: "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)",
-      },
-    ],
   },
   formatDetection: {
     telephone: false,
@@ -46,7 +36,7 @@ export const metadata: Metadata = {
     url: "https://marketplace.ashoka.edu.in",
     images: [
       {
-        url: "/icons/icon-512x512.png",
+        url: "/images/android-chrome-512x512.png",
         width: 512,
         height: 512,
         alt: "Ashoka Marketplace Logo",
@@ -57,17 +47,17 @@ export const metadata: Metadata = {
     card: "summary",
     title: "Ashoka Marketplace",
     description: "Buy and sell second-hand items on campus",
-    images: ["/icons/icon-512x512.png"],
+    images: ["/images/android-chrome-512x512.png"],
   },
   icons: {
     icon: [
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+      { url: "/images/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/images/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/images/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/images/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/icons/apple-touch-icon-120x120.png", sizes: "120x120", type: "image/png" },
-      { url: "/icons/apple-touch-icon-152x152.png", sizes: "152x152", type: "image/png" },
-      { url: "/icons/apple-touch-icon-180x180.png", sizes: "180x180", type: "image/png" },
+      { url: "/images/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
 };
