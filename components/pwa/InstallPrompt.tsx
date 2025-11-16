@@ -118,11 +118,8 @@ export default function InstallPrompt() {
         <Modal
             isOpen={showPrompt || isiOSNoPrompt}
             onClose={handleDismiss}
-            placement="center"
+            placement="auto"
             backdrop="blur"
-            classNames={{
-                backdrop: "bg-gradient-to-t from-zinc-900 to-zinc-900/10 backdrop-opacity-20"
-            }}
         >
             <ModalContent>
                 <ModalHeader className="flex flex-col gap-1 items-center pt-6">
@@ -159,10 +156,6 @@ export default function InstallPrompt() {
                             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
                                 <Smartphone className="h-5 w-5 text-green-600 dark:text-green-400" />
                             </div>
-                            <div>
-                                <h3 className="font-semibold text-sm">Works Offline</h3>
-                                <p className="text-xs text-foreground-500">Browse listings even without internet</p>
-                            </div>
                         </div>
 
                         <div className="flex items-start gap-3">
@@ -179,16 +172,10 @@ export default function InstallPrompt() {
                         {isiOSNoPrompt && (
                             <div className="mt-2 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
                                 <p className="text-xs text-center text-foreground-700">
-                                    Tap the <strong>Share</strong> button <span className="inline-block align-middle">📤</span> in Safari, then select <strong>&quot;Add to Home Screen&quot;</strong>
+                                    Tap the <strong>Share</strong> button <span className="inline-block align-middle"></span> in Safari, then select the three dots (...) then select <strong>&quot;Add to Home Screen&quot;</strong>
                                 </p>
                             </div>
                         )}
-                    </div>
-
-                    <div className="mt-4 p-3 bg-default-100 rounded-lg">
-                        <p className="text-xs text-center text-foreground-600">
-                            <span className="font-semibold">Free</span> • No account required
-                        </p>
                     </div>
                 </ModalBody>
                 <ModalFooter className="flex-col gap-2 pb-6">
