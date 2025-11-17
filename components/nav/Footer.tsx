@@ -23,6 +23,9 @@ export default function Footer() {
                 className="mt-4"
               />
             </Link>
+            <p className="text-gray-500 text-sm mt-2">
+              Made with ❤️ by IEEE Projects
+            </p>
           </div>
           <div>
             <h3 className="text-lg font-semibold mb-4">Quick Links</h3>

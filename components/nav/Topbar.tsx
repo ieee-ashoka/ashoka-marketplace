@@ -2,55 +2,19 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
-import { JwtClaims } from "@/types/supabase";
-import { createClient } from "@/utils/supabase/client";
 import { User as UserIcon } from "lucide-react";
 import { AnimatedThemeToggler } from "@/components/ui/theme-switcher";
+import { useAuth } from "@/app/context/AuthContext";
 
 const Topbar = () => {
     const [mounted, setMounted] = useState(false);
-    const supabase = createClient();
-    const [user, setUser] = useState<JwtClaims | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { user, isLoading: authLoading } = useAuth();
 
     useEffect(() => {
         setMounted(true);
     }, []);
-
-    useEffect(() => {
-        const getUser = async () => {
-            try {
-                const { data } = await supabase.auth.getClaims();
-                setUser(data?.claims as JwtClaims | null);
-            } catch (error) {
-                console.error("Error fetching user:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        getUser();
-
-        // Set up auth listener
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session) {
-                try {
-                    const { data } = await supabase.auth.getClaims();
-                    setUser(data?.claims as JwtClaims | null);
-                } catch (error) {
-                    console.error("Error fetching user claims:", error);
-                    setUser(null);
-                }
-            } else {
-                setUser(null);
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, [supabase]);
 
     if (!mounted) return null;
 
@@ -66,9 +30,13 @@ const Topbar = () => {
                             transition={{ duration: 0.5 }}
                             className="flex items-center"
                         >
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                                <span className="text-indigo-600 font-bold text-3xl">M</span>
-                            </div>
+                            <Image
+                                src="/images/marketplace-logo.png"
+                                alt="Ashoka Marketplace"
+                                width={70}
+                                height={70}
+                                className="rounded-lg"
+                            />
                         </motion.div>
                     </Link>
                 </div>
@@ -79,7 +47,7 @@ const Topbar = () => {
                 </div>
 
                 {/* Right: Avatar (fixed width) */}
-                {!loading && user && (
+                {!authLoading && user && (
                     <div className="flex-shrink-0">
                         <Dropdown placement="bottom-end">
                             <DropdownTrigger>

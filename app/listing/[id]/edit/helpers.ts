@@ -21,6 +21,8 @@ export interface ListingWithCategory extends Tables<"listings"> {
   categories?: Tables<"categories"> | null;
 }
 
+const supabase = createClient();
+
 /**
  * Get a listing by ID for editing (must be owned by current user)
  */
@@ -28,7 +30,6 @@ export async function getListingForEdit(
   listingId: string | number
 ): Promise<{ listing: ListingWithCategory | null; isOwner: boolean }> {
   try {
-    const supabase = createClient();
     const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
 
     // Get current user
@@ -75,7 +76,6 @@ export async function getListingForEdit(
  */
 export async function getCategories(): Promise<Tables<"categories">[]> {
   try {
-    const supabase = createClient();
     const { data, error } = await supabase
       .from("categories")
       .select("*")
@@ -127,8 +127,9 @@ export async function uploadMultipleListingImages(
       // Upload the compressed image
       const uploadResult = await uploadImage(
         compressionResult.file,
-        "listing_images",
-        userId
+        "ashoka-marketplace",
+        userId,
+        "listing-images"
       );
 
       if (!uploadResult.success || !uploadResult.url) {
@@ -177,8 +178,6 @@ export async function updateListing(
   }
 ): Promise<UpdateListingResult> {
   try {
-    const supabase = createClient();
-
     // Get the current user
     const { data: userData, error: userError } =
       await supabase.auth.getClaims();
@@ -261,7 +260,7 @@ export async function updateListing(
       // Clean up deleted images
       for (const imageUrl of imagesToDelete) {
         try {
-          await deleteImage(imageUrl, "listing_images");
+          await deleteImage(imageUrl, "ashoka-marketplace");
         } catch (cleanupError) {
           console.error("Failed to cleanup image:", imageUrl, cleanupError);
         }

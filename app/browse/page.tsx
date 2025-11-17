@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
     Input,
     Button,
@@ -26,9 +27,9 @@ import {
     Grid3X3,
     List
 } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
 import { Tables } from "@/types/database.types";
 import ProductCard from "@/components/ProductCard";
+import { fetchActiveListings, fetchCategories as fetchCategoriesHelper } from "./helpers";
 
 // Enhanced listing type with category details
 interface ListingWithCategory extends Tables<"listings"> {
@@ -68,7 +69,11 @@ const SORT_OPTIONS = [
     { key: "name_desc", label: "Name: Z to A" },
 ];
 
-export default function BrowsePage() {
+function BrowseContent() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+
     // State management
     const [listings, setListings] = useState<ListingWithCategory[]>([]);
     const [categories, setCategories] = useState<Tables<"categories">[]>([]);
@@ -77,6 +82,7 @@ export default function BrowsePage() {
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 12;
+    const [initialLoadDone, setInitialLoadDone] = useState(false);
 
     // Filters state
     const [filters, setFilters] = useState<Filters>({
@@ -90,51 +96,71 @@ export default function BrowsePage() {
     // Mobile filter modal
     const { isOpen: isFilterOpen, onOpen: onFilterOpen, onOpenChange: onFilterOpenChange } = useDisclosure();
 
-    const supabase = createClient();
-
     const fetchListings = useCallback(async () => {
         try {
             setLoading(true);
 
             // Fetch listings with category details
-            const { data: listingsData, error: listingsError } = await supabase
-                .from("listings")
-                .select(`
-                    *,
-                    categories (
-                        id,
-                        name,
-                        key,
-                        icon,
-                        color,
-                        iconColor
-                    )
-                `)
-                .not("expired_at", "lt", new Date().toISOString());
-
-            if (listingsError) throw listingsError;
+            const listingsData = await fetchActiveListings();
 
             // Fetch categories for filters
-            const { data: categoriesData, error: categoriesError } = await supabase
-                .from("categories")
-                .select("*")
-                .order("name");
+            const categoriesData = await fetchCategoriesHelper();
 
-            if (categoriesError) throw categoriesError;
-
-            setListings(listingsData || []);
-            setCategories(categoriesData || []);
+            setListings(listingsData);
+            setCategories(categoriesData);
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
             setLoading(false);
         }
-    }, [supabase]);
+    }, []);
 
     // Fetch listings on component mount
     useEffect(() => {
         fetchListings();
     }, [fetchListings]);
+
+    // Read all params from URL on mount and update filters
+    useEffect(() => {
+        // Wait for categories to load before processing URL params
+        if (categories.length === 0) return;
+
+        const urlSearch = searchParams.get('search');
+        const urlCategory = searchParams.get('category');
+        const urlCondition = searchParams.get('condition');
+        const urlMinPrice = searchParams.get('minPrice');
+        const urlMaxPrice = searchParams.get('maxPrice');
+        const urlSortBy = searchParams.get('sortBy');
+        const urlProductAge = searchParams.get('productAge');
+
+        if (urlSearch) {
+            setSearchQuery(urlSearch);
+        }
+
+        // Handle category - only support category key (string)
+        let categoryId: number | null = null;
+        if (urlCategory) {
+            // Find the matching category by key
+            const matchingCategory = categories.find(cat => cat.key === urlCategory);
+            if (matchingCategory) {
+                categoryId = matchingCategory.id;
+            }
+        }
+
+        setFilters(prev => ({
+            ...prev,
+            category: categoryId,
+            condition: urlCondition || "",
+            priceRange: {
+                min: urlMinPrice ? parseInt(urlMinPrice) : 0,
+                max: urlMaxPrice ? parseInt(urlMaxPrice) : 100000,
+            },
+            sortBy: urlSortBy || "newest",
+            productAge: urlProductAge ? parseInt(urlProductAge) : null,
+        }));
+
+        setInitialLoadDone(true);
+    }, [searchParams, categories]);
 
     // Filter and search logic
     const processedListings = useMemo(() => {
@@ -211,7 +237,37 @@ export default function BrowsePage() {
         setCurrentPage(1);
     }, [searchQuery, filters]);
 
-    // Clear all filters
+    // Update URL when filters or search changes
+    useEffect(() => {
+        // Don't update URL until initial load is complete
+        if (!initialLoadDone) return;
+
+        const params = new URLSearchParams();
+
+        if (searchQuery) params.set('search', searchQuery);
+
+        // Use category key instead of ID in URL
+        if (filters.category) {
+            const selectedCategory = categories.find(cat => cat.id === filters.category);
+            if (selectedCategory?.key) {
+                params.set('category', selectedCategory.key);
+            }
+        }
+
+        if (filters.condition) params.set('condition', filters.condition);
+        if (filters.priceRange.min > 0) params.set('minPrice', filters.priceRange.min.toString());
+        if (filters.priceRange.max < 100000) params.set('maxPrice', filters.priceRange.max.toString());
+        if (filters.sortBy !== 'newest') params.set('sortBy', filters.sortBy);
+        if (filters.productAge !== null) params.set('productAge', filters.productAge.toString());
+
+        const queryString = params.toString();
+        const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
+
+        // Only update if URL actually changed to avoid unnecessary history entries
+        if (window.location.pathname + window.location.search !== newUrl) {
+            router.push(newUrl, { scroll: false });
+        }
+    }, [searchQuery, filters, pathname, router, categories, initialLoadDone]);    // Clear all filters
     const clearFilters = () => {
         setFilters({
             category: null,
@@ -221,6 +277,7 @@ export default function BrowsePage() {
             sortBy: "newest"
         });
         setSearchQuery("");
+        router.push(pathname, { scroll: false });
     };
 
     // Active filters count
@@ -649,5 +706,17 @@ export default function BrowsePage() {
                 </ModalContent>
             </Modal>
         </div>
+    );
+}
+
+export default function BrowsePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <Spinner size="lg" color="primary" />
+            </div>
+        }>
+            <BrowseContent />
+        </Suspense>
     );
 }

@@ -11,57 +11,40 @@ import {
   DropdownMenu,
   DropdownItem,
   Avatar,
+  Kbd,
 } from "@heroui/react";
 import { Search, User as UserIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatedThemeToggler } from "@/components/ui/theme-switcher";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
-import { JwtClaims } from "@/types/supabase";
+import { useAuth } from "@/app/context/AuthContext";
 
 export default function AppNavbar() {
   const pathname = usePathname();
-  const supabase = createClient();
-  const [user, setUser] = useState<JwtClaims | null>(null);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
 
+  // Handle client-side mounting
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const {
-          data,
-        } = await supabase.auth.getClaims();
-        setUser(data?.claims as JwtClaims | null);
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setMounted(true);
+  }, []);
 
-    getUser();
+  // Handle search
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/browse?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
+    }
+  };
 
-    // Set up auth listener
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        try {
-          const { data } = await supabase.auth.getClaims();
-          setUser(data?.claims as JwtClaims | null);
-        } catch (error) {
-          console.error("Error fetching user claims:", error);
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase]);
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+  };
 
   // Dynamic menu items - adjust based on auth status
   const menuItems = [
@@ -80,7 +63,14 @@ export default function AppNavbar() {
     <Navbar maxWidth="xl" isBlurred className="hidden md:flex backdrop-blur-[24px]">
       <NavbarContent>
         <NavbarBrand>
-          <Link href="/" className="flex items-center">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/images/marketplace-logo.png"
+              alt="Ashoka Marketplace"
+              width={75}
+              height={75}
+              className="rounded-lg"
+            />
             <p className="font-bold text-indigo-400 text-xl">
               Ashoka Marketplace
             </p>
@@ -89,20 +79,31 @@ export default function AppNavbar() {
       </NavbarContent>
 
       <NavbarContent className="hidden md:flex gap-4" justify="center">
-        <NavbarItem>
-          <Input
-            classNames={{
-              base: "max-w-full sm:max-w-[15rem] h-10",
-              mainWrapper: "h-full",
-              input: "text-small",
-              inputWrapper: "h-full rounded-full px-2",
-            }}
-            style={{ "fontWeight": "600" }}
-            placeholder="Search items..."
-            size="sm"
-            startContent={<Search className="text-gray-400 dark:text-gray-300" size={18} style={{ 'paddingLeft': '4px' }} />}
-            type="search"
-          />
+        <NavbarItem className="w-full max-w-xl">
+          <form onSubmit={handleSearch} className="w-full">
+            <Input
+              classNames={{
+                base: "w-full h-10",
+                mainWrapper: "h-full",
+                input: "text-small",
+                inputWrapper: "h-full rounded-full px-2",
+              }}
+              style={{ "fontWeight": "600" }}
+              placeholder="Search items... (Press Enter)"
+              size="sm"
+              value={searchQuery}
+              onValueChange={handleSearchChange}
+              startContent={<Search className="text-gray-400 dark:text-gray-300" size={18} style={{ 'paddingLeft': '4px' }} />}
+              endContent={
+                mounted && searchQuery && (
+                  <Kbd keys={["enter"]} className="hidden sm:inline-flex">
+                    Enter
+                  </Kbd>
+                )
+              }
+              type="search"
+            />
+          </form>
         </NavbarItem>
         {menuItems.map((item) => (
           <NavbarItem key={item.name} isActive={pathname === item.href}>
@@ -118,7 +119,7 @@ export default function AppNavbar() {
       </NavbarContent>
 
       <NavbarContent justify="end">
-        {loading ? (
+        {authLoading ? (
           <NavbarItem>
             <div className="w-6 h-6 rounded-full border-2 border-t-transparent border-indigo-600 animate-spin"></div>
           </NavbarItem>

@@ -1,9 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
 import { Database } from "@/types/database.types";
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { google } from "googleapis";
-// import {init, Server, readFile} from "universal-fs";
-
 
 // Type definitions based on your database schema
 type Listing = Database["public"]["Tables"]["listings"]["Row"];
@@ -13,8 +9,6 @@ type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export interface ListingWithCategory extends Listing {
   categories?: Database["public"]["Tables"]["categories"]["Row"] | null;
 }
-// type Wishlist = Database["public"]["Tables"]["wishlist"]["Row"];
-// type User = { id: string };
 
 // Initialize Supabase client
 const supabase = createClient();
@@ -23,45 +17,64 @@ const supabase = createClient();
  * Get the currently authenticated user
  */
 export async function getCurrentUser() {
-  const { data, error } = await supabase.auth.getClaims();
+  try {
+    const { data, error } = await supabase.auth.getClaims();
 
-  if (error) {
-    console.error("Error getting current user:", error);
+    if (error) {
+      console.error("Error getting current user:", error);
+      return null;
+    }
+
+    return data?.claims ? { id: data.claims.sub, user: data.claims } : null;
+  } catch (error) {
+    console.error("Exception getting current user:", error);
     return null;
   }
-
-  return data?.claims ? { id: data.claims.sub } : null;
 }
 
-export const handleSend = async (name, seller, notinterested = false) => {
-  const supabase = createClient();
-  const userdata = await supabase.auth.getUser();
-  var data_ = {}
-  if (userdata != null) {
-    data_ = {
-      to: seller,
-      subject: name,
-      who: `${userdata?.data.user.user_metadata.full_name} (${userdata?.data.user.email})`,
-      notin: notinterested
-    };
-  } else {
-    data_ = {
-      to: seller,
-      subject: name,
-      who: `ERROR UNKNOWN`,
-      notin: notinterested
-    }
-    console.error("Not logged in")
-    alert("Please log in.")
+export const handleSend = async (
+  name: string,
+  seller: string,
+  sellerName: string,
+  userName: string,
+  userEmail: string
+): Promise<boolean> => {
+  const userdata = await getCurrentUser();
+  if (!userdata?.id) {
+    console.error("No user logged in");
+    return false;
   }
-  const res = await fetch("/api/email-send", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data_)
-  });
-  const data = await res.json();
-  console.log(data.success ? "Email sent!" : `Error: ${data.error}`);
-};
 
+  const data_ = {
+    to: seller,
+    toName: sellerName,
+    subject: name,
+    fromName: userName,
+    fromEmail: userEmail,
+  };
+
+  console.log("Sending email with data:", data_);
+
+  try {
+    const res = await fetch("/api/email-send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data_),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      console.log("Email sent!");
+      return true;
+    } else {
+      console.error(`Error: ${data.error}`);
+      return false;
+    }
+  } catch (error) {
+    console.error("Failed to send email:", error);
+    return false;
+  }
+};
 
 /**
  * Fetch a listing by ID with category details
@@ -222,4 +235,155 @@ export async function removeFromWishlist(
 export function isListingActive(listing: Listing): boolean {
   if (!listing.expired_at) return true;
   return new Date(listing.expired_at) > new Date();
+}
+
+export async function isInterested(
+  listingId: string | number,
+  userId: string
+): Promise<boolean> {
+  const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
+
+  const { data, error } = await supabase
+    .from("interested")
+    .select()
+    .eq("listing_id", id)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error checking if user is interested:", error);
+    return false;
+  }
+
+  return !!data; // Returns true if a row exists
+}
+
+export async function getInterestedCount(
+  listingId: string | number
+): Promise<number> {
+  const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
+
+  const { count, error } = await supabase
+    .from("interested")
+    .select("*", { count: "exact", head: true })
+    .eq("listing_id", id);
+
+  if (error) {
+    console.error("Error fetching interested count:", error);
+    return 0;
+  }
+
+  return count || 0;
+}
+
+export async function addInterestedUser(
+  listingId: string | number,
+  userId: string
+): Promise<boolean> {
+  const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
+
+  // Insert new interested row
+  const { error } = await supabase.from("interested").insert({
+    listing_id: id,
+    user_id: userId,
+  });
+
+  if (error) {
+    console.error("Error adding interested user:", error);
+    return false;
+  }
+
+  return true;
+}
+
+export async function removeInterestedUser(
+  listingId: string | number,
+  userId: string
+): Promise<boolean> {
+  const id = typeof listingId === "string" ? parseInt(listingId) : listingId;
+
+  // Delete the interested row
+  const { error } = await supabase
+    .from("interested")
+    .delete()
+    .eq("listing_id", id)
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("Error removing interested user:", error);
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Report reasons type from database
+ */
+export type ReportReason =
+  | "scam"
+  | "inappropriate"
+  | "duplicate"
+  | "misleading"
+  | "prohibited"
+  | "other";
+
+/**
+ * Submit a report for a listing
+ */
+export async function reportListing(
+  listingId: number,
+  reporterId: string,
+  reason: ReportReason,
+  details?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase.from("reports").insert({
+      listing_id: listingId,
+      reporter_id: reporterId,
+      reason: reason,
+      details: details || null,
+      status: "pending",
+    });
+
+    if (error) {
+      console.error("Error submitting report:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Exception submitting report:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+}
+
+/**
+ * Check if a user has already reported a specific listing
+ */
+export async function hasUserReportedListing(
+  listingId: number,
+  userId: string
+): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from("reports")
+      .select("id")
+      .eq("listing_id", listingId)
+      .eq("reporter_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error checking existing report:", error);
+      return false;
+    }
+
+    return !!data;
+  } catch (error) {
+    console.error("Exception checking existing report:", error);
+    return false;
+  }
 }

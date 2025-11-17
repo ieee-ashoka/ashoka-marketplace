@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Database } from "@/types/database.types";
-import { JwtClaims } from "@/types/supabase";
-import { createClient } from "@/utils/supabase/client";
 import {
   Button,
   Card,
@@ -21,7 +19,10 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-  ModalContent
+  ModalContent,
+  Textarea,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 import {
   Heart,
@@ -32,7 +33,7 @@ import {
   MapPin,
   Tag,
   Flag,
-  ShoppingBag
+  ShoppingBag,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import Link from "next/link";
@@ -47,9 +48,15 @@ import {
   removeFromWishlist,
   isListingActive,
   ListingWithCategory,
-  handleSend
+  handleSend,
+  isInterested,
+  getInterestedCount,
+  addInterestedUser,
+  removeInterestedUser,
+  reportListing,
+  hasUserReportedListing,
+  type ReportReason,
 } from "./helpers";
-// import { sendEmail } from "./gmail"
 
 // Use types from the database schema
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -66,11 +73,14 @@ export default function ListingPage() {
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
   const [similarListings, setSimilarListings] = useState<ListingWithCategory[]>([]);
-  const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
-  const [user, setUser] = useState<JwtClaims | null>(null);
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [currentUser, setCurrentUser] = useState<{ id: string; user: Record<string, unknown> } | null>(null);
+  const { isOpen: isReportOpen, onOpen: onReportOpen, onOpenChange: onReportOpenChange } = useDisclosure();
   const [interested, setInterested] = useState(false);
+  const [interestedCount, setInterestedCount] = useState(0);
+  const [isProcessingInterest, setIsProcessingInterest] = useState(false);
+  const [reportReason, setReportReason] = useState<ReportReason | "">("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   useEffect(() => {
     async function fetchListingData() {
@@ -95,6 +105,10 @@ export default function ListingPage() {
         if (user) {
           const inWishlist = await isListingInWishlist(user.id, listingData.id);
           setIsInWishlist(inWishlist);
+
+          // Check if user is interested
+          const userInterested = await isInterested(listingData.id, user.id);
+          setInterested(userInterested);
         }
 
         // Fetch seller profile
@@ -108,6 +122,10 @@ export default function ListingPage() {
           const similarItems = await getSimilarListings(listingData.category, listingData.id);
           setSimilarListings(similarItems);
         }
+
+        // Fetch interested count
+        const count = await getInterestedCount(listingData.id);
+        setInterestedCount(count);
       } catch (error) {
         console.error("Error fetching listing:", error);
       } finally {
@@ -147,16 +165,148 @@ export default function ListingPage() {
   }
 
   async function markInterested() {
-    // TODO: Track interested on supabase
-    handleSend(listing?.name, seller?.email, false);
-    onOpen();
+    if (!currentUser || !listing || !seller || isProcessingInterest) return;
+
+    setIsProcessingInterest(true);
+    console.log("Marking interested");
+
+    try {
+      // Add to database
+      const dbSuccess = await addInterestedUser(listing.id, currentUser.id);
+
+      if (dbSuccess) {
+        // Get user info for email
+        const userName = (currentUser.user?.user_metadata as { full_name?: string })?.full_name || 'Ashoka User';
+        const userEmail = (currentUser.user as { email?: string })?.email || '';
+
+        // Send email notification
+        await handleSend(
+          listing.name || '',
+          seller.email || '',
+          seller.name || 'Seller',
+          userName,
+          userEmail
+        );
+
+        // Update local state
+        setInterested(true);
+        setInterestedCount(prev => prev + 1);
+      }
+    } finally {
+      setIsProcessingInterest(false);
+    }
   }
 
   async function markNotInterested() {
-    // Vice-verca
-    handleSend(listing?.name, seller?.email, true);
-    onOpen();
+    if (!currentUser || !listing || !seller || isProcessingInterest) return;
+
+    setIsProcessingInterest(true);
+    console.log("Removing interest");
+
+    try {
+      // Remove from database
+      const dbSuccess = await removeInterestedUser(listing.id, currentUser.id);
+
+      if (dbSuccess) {
+        // Update local state (no email sent for uninterested)
+        setInterested(false);
+        setInterestedCount(prev => Math.max(0, prev - 1));
+      }
+    } finally {
+      setIsProcessingInterest(false);
+    }
   }
+
+  // Reusable Action Buttons Component
+  const ActionButtons = ({ isMobile = false }: { isMobile?: boolean }) => {
+    if (isOwner) return null;
+
+    return (
+      <div className={`flex gap-2 ${isMobile ? 'mt-4 lg:hidden' : 'hidden lg:flex mb-6'}`}>
+        <Button
+          className="flex-1"
+          color={!interested ? "secondary" : "warning"}
+          size={isMobile ? "md" : "lg"}
+          variant="flat"
+          isDisabled={!isActive}
+          isLoading={isProcessingInterest}
+          onPress={() => {
+            if (!interested) {
+              markInterested();
+            } else {
+              markNotInterested();
+            }
+          }}
+          startContent={!isProcessingInterest && <ShoppingBag size={isMobile ? 18 : 20} />}
+        >
+          {!interested ? "Mark Interested" : "Mark Not Interested"}
+        </Button>
+        {isMobile ? (
+          <>
+            <Button
+              isIconOnly
+              variant="flat"
+              color={isInWishlist ? "danger" : "default"}
+              onPress={toggleWishlist}
+              isLoading={isAddingToWishlist}
+            >
+              <Heart fill={isInWishlist ? "currentColor" : "none"} />
+            </Button>
+            <Button
+              isIconOnly
+              variant="flat"
+              onPress={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: listing?.name || "Check out this listing",
+                    text: listing?.description || "Found this on Ashoka Marketplace",
+                    url: window.location.href,
+                  });
+                } else {
+                  navigator.clipboard.writeText(window.location.href);
+                }
+              }}
+            >
+              <Share2 />
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="flat"
+              color={isInWishlist ? "danger" : "default"}
+              onPress={toggleWishlist}
+              isLoading={isAddingToWishlist}
+              startContent={<Heart fill={isInWishlist ? "currentColor" : "none"} />}
+              size="lg"
+            >
+              {isInWishlist ? "Saved" : "Save"}
+            </Button>
+            <Tooltip content="Share listing">
+              <Button
+                isIconOnly
+                variant="flat"
+                size="lg"
+                onPress={() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: listing?.name || "Check out this listing",
+                      text: listing?.description || "Found this on Ashoka Marketplace",
+                      url: window.location.href,
+                    });
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                  }
+                }}
+              >
+                <Share2 size={20} />
+              </Button>
+            </Tooltip>
+          </>
+        )}
+      </div>
+    );
+  };
 
   // Loading skeleton
   if (isLoading) {
@@ -211,30 +361,118 @@ export default function ListingPage() {
     ? listing.image
     : [placeholderImage];
 
+  // Check if the current user is the owner of this listing
+  const isOwner = currentUser && listing.user_id === currentUser.id;
+
   return (
     <>
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+
+      {/* Report Listing Modal */}
+      <Modal isOpen={isReportOpen} onOpenChange={onReportOpenChange} size="2xl">
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1">Marked as {!interested ? "not " : ""}Interested</ModalHeader>
+              <ModalHeader className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <Flag className="text-danger" size={24} />
+                  <span>Report Listing</span>
+                </div>
+              </ModalHeader>
               <ModalBody>
-                <p>
-                  The seller has been notified of your{!interested ? " withdrawal of" : ""} interest. {interested ? "They will reach out to you via email." : ""}
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Please help us understand what&apos;s wrong with this listing. Your report will be reviewed by our team.
                 </p>
-                <p>
-                  {interested ? "If the product has a price on request, it will be sent to you shortly." : ""}
+
+                <Select
+                  label="Reason for reporting"
+                  placeholder="Select a reason"
+                  selectedKeys={reportReason ? [reportReason] : []}
+                  onSelectionChange={(keys) => {
+                    const selected = Array.from(keys)[0];
+                    setReportReason(selected as ReportReason);
+                  }}
+                  isRequired
+                >
+                  <SelectItem key="scam">
+                    Scam or fraud
+                  </SelectItem>
+                  <SelectItem key="inappropriate">
+                    Inappropriate content
+                  </SelectItem>
+                  <SelectItem key="duplicate">
+                    Duplicate listing
+                  </SelectItem>
+                  <SelectItem key="misleading">
+                    Misleading information
+                  </SelectItem>
+                  <SelectItem key="prohibited">
+                    Prohibited item
+                  </SelectItem>
+                  <SelectItem key="other">
+                    Other
+                  </SelectItem>
+                </Select>
+
+                <Textarea
+                  label="Additional details (optional)"
+                  placeholder="Please provide more information about why you're reporting this listing..."
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  minRows={4}
+                />
+
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Reports are confidential. The seller will not be notified of who reported the listing.
                 </p>
               </ModalBody>
               <ModalFooter>
-                <Button color="danger" variant="light" onPress={onClose}>
-                  Close
+                <Button color="default" variant="light" onPress={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  color="danger"
+                  isLoading={isSubmittingReport}
+                  onPress={async () => {
+                    if (!reportReason || !currentUser || !listing) return;
+
+                    setIsSubmittingReport(true);
+
+                    // Check if user already reported this listing
+                    const alreadyReported = await hasUserReportedListing(listing.id, currentUser.id);
+
+                    if (alreadyReported) {
+                      setIsSubmittingReport(false);
+                      onClose();
+                      return;
+                    }
+
+                    // Submit the report
+                    const result = await reportListing(
+                      listing.id,
+                      currentUser.id,
+                      reportReason,
+                      reportDetails || undefined
+                    );
+
+                    if (result.success) {
+                      setReportReason("");
+                      setReportDetails("");
+                      onClose();
+                    } else {
+                    }
+
+                    setIsSubmittingReport(false);
+                  }}
+                  isDisabled={!reportReason}
+                >
+                  Submit Report
                 </Button>
               </ModalFooter>
             </>
           )}
         </ModalContent>
       </Modal>
+
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Rest of the component remains the same */}
         {/* Breadcrumb */}
@@ -260,7 +498,7 @@ export default function ListingPage() {
           <div className="w-full lg:w-7/12">
             <div className="relative">
               {/* Main Image */}
-              <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+              <div className="relative overflow-hidden rounded-lg">
                 <Image
                   src={listingImages[selectedImageIndex]}
                   alt={listing.name || "Product Image"}
@@ -289,15 +527,15 @@ export default function ListingPage() {
                 )}
 
                 {/* Interested Count */}
-                {/*listing.interested_count && (
-                <Chip
-                  className="absolute top-3 left-3"
-                  color="secondary"
-                  variant="shadow"
-                >
-                  {listing.interested_count} Interested
-                </Chip>
-              )*/}
+                {interestedCount > 0 && (
+                  <Chip
+                    className="absolute top-3 right-3"
+                    color="primary"
+                    variant="shadow"
+                  >
+                    {interestedCount} Interested
+                  </Chip>
+                )}
               </div>
 
               {/* Thumbnail Gallery */}
@@ -325,53 +563,7 @@ export default function ListingPage() {
             </div>
 
             {/* Mobile: Action Buttons */}
-            <div className="flex mt-4 gap-2 lg:hidden">
-              <Button
-                className="flex-1"
-                color={!interested ? "secondary" : "warning"}
-                variant="flat"
-                isDisabled={!isActive}
-                onPress={() => {
-                  if (!interested) {
-                    markInterested();
-                    setInterested(true);
-                  } else {
-                    markNotInterested();
-                    setInterested(false);
-                  }
-                }}
-                startContent={<ShoppingBag size={18} />}
-              >
-                {!interested ? "Mark Interested" : "Mark Not Interested"}
-              </Button>
-              <Button
-                isIconOnly
-                variant="flat"
-                color={isInWishlist ? "danger" : "default"}
-                onPress={toggleWishlist}
-                isLoading={isAddingToWishlist}
-              >
-                <Heart fill={isInWishlist ? "currentColor" : "none"} />
-              </Button>
-              <Button
-                isIconOnly
-                variant="flat"
-                onPress={() => {
-                  if (navigator.share) {
-                    navigator.share({
-                      title: listing.name || "Check out this listing",
-                      text: listing.description || "Found this on Ashoka Marketplace",
-                      url: window.location.href,
-                    });
-                  } else {
-                    navigator.clipboard.writeText(window.location.href);
-                    // Would add toast notification here
-                  }
-                }}
-              >
-                <Share2 />
-              </Button>
-            </div>
+            <ActionButtons isMobile={true} />
 
             {/* Description Section - Mobile only */}
             <div className="mt-6 lg:hidden">
@@ -434,58 +626,39 @@ export default function ListingPage() {
               </p>
             </div>
 
+            {/* Owner Notice */}
+            {isOwner && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 p-4 rounded-lg mb-6">
+                <p className="text-sm font-medium">
+                  This is your listing - viewing in read-only mode.
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <Button
+                    as={Link}
+                    href={`/listing/${listing.id}/edit`}
+                    size="sm"
+                    color="primary"
+                    variant="flat"
+                  >
+                    Edit Listing
+                  </Button>
+                  {isActive && (
+                    <Button
+                      as={Link}
+                      href={`/listing/${listing.id}/sell`}
+                      size="sm"
+                      color="success"
+                      variant="flat"
+                    >
+                      Mark as Sold
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Desktop: Action Buttons */}
-            <div className="hidden lg:flex gap-2 mb-6">
-              <Button
-                className="flex-1"
-                color={!interested ? "secondary" : "warning"}
-                size="lg"
-                isDisabled={!isActive}
-                onPress={() => {
-                  if (!interested) {
-                    markInterested();
-                    setInterested(true)
-                  } else {
-                    markNotInterested();
-                    setInterested(false)
-                  }
-                }}
-                startContent={<ShoppingBag size={20} />}
-              >
-                {!interested ? "Mark Interested" : "Mark Not Interested"}
-              </Button>
-              <Button
-                variant="flat"
-                color={isInWishlist ? "danger" : "default"}
-                onPress={toggleWishlist}
-                isLoading={isAddingToWishlist}
-                startContent={<Heart fill={isInWishlist ? "currentColor" : "none"} />}
-                size="lg"
-              >
-                {isInWishlist ? "Saved" : "Save"}
-              </Button>
-              <Tooltip content="Share listing">
-                <Button
-                  isIconOnly
-                  variant="flat"
-                  size="lg"
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({
-                        title: listing.name || "Check out this listing",
-                        text: listing.description || "Found this on Ashoka Marketplace",
-                        url: window.location.href,
-                      });
-                    } else {
-                      navigator.clipboard.writeText(window.location.href);
-                      // Would add toast notification here
-                    }
-                  }}
-                >
-                  <Share2 size={20} />
-                </Button>
-              </Tooltip>
-            </div>
+            <ActionButtons isMobile={false} />
 
             {/* Warning if expired */}
             {!isActive && (
@@ -497,55 +670,58 @@ export default function ListingPage() {
             )}
 
             {/* Seller Info Card */}
-            <Card className="mb-6">
-              <CardHeader className="pb-0 pt-4">
-                <h2 className="text-lg font-semibold">About the Seller</h2>
-              </CardHeader>
-              <CardBody>
-                <div className="flex items-center">
-                  <Avatar
-                    src={seller?.avatar || "https://i.pravatar.cc/300"}
-                    name={seller?.name?.charAt(0).toUpperCase() || "U"}
-                    size="md"
-                    className="mr-4"
-                  />
-                  <div>
-                    <h3 className="font-medium">
-                      {seller?.name || "Ashoka User"}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Member since {format(new Date(seller?.created_at || listing.created_at), 'MMM yyyy')}
-                    </p>
+            {!isOwner && (
+              <Card className="mb-6">
+                <CardHeader className="pb-0 pt-4">
+                  <h2 className="text-lg font-semibold">About the Seller</h2>
+                </CardHeader>
+                <CardBody>
+                  <div className="flex items-center">
+                    <Avatar
+                      src={seller?.avatar || "https://i.pravatar.cc/300"}
+                      name={seller?.name?.charAt(0).toUpperCase() || "U"}
+                      size="md"
+                      className="mr-4"
+                    />
+                    <div>
+                      <h3 className="font-medium">
+                        {seller?.name || "Ashoka User"}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Member since {format(new Date(seller?.created_at || listing.created_at), 'MMM yyyy')}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-4 flex justify-between text-sm">
-                  <Button
-                    as={Link}
-                    href={`/profile/${seller?.user_id}`}
-                    variant="flat"
-                    color="secondary"
-                    className="w-full"
-                  >
-                    View Profile
-                  </Button>
-                </div>
-              </CardBody>
-            </Card>
+                  <div className="mt-4 flex justify-between text-sm">
+                    <Button
+                      as={Link}
+                      href={`/profile/${seller?.user_id}`}
+                      variant="flat"
+                      color="secondary"
+                      className="w-full"
+                    >
+                      View Profile
+                    </Button>
+                  </div>
+                </CardBody>
+              </Card>
+            )}
 
             {/* Report Button */}
-            <div className="text-center">
-              <Button
-                variant="light"
-                color="danger"
-                size="sm"
-                as={Link}
-                href={`/report?listing=${listing.id}`}
-                startContent={<Flag size={16} />}
-                className="text-xs"
-              >
-                Report this listing
-              </Button>
-            </div>
+            {!isOwner && (
+              <div className="text-center">
+                <Button
+                  variant="light"
+                  color="danger"
+                  size="sm"
+                  onPress={onReportOpen}
+                  startContent={<Flag size={16} />}
+                  className="text-xs"
+                >
+                  Report this listing
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
