@@ -17,6 +17,7 @@ import ProductCard from "../components/ProductCard";
 import { Tables } from "@/types/database.types";
 import { Button } from "@heroui/react";
 import CategoriesSkeleton from "../components/loading/categories";
+import { useRouter } from 'next/navigation'
 import { fetchCategories, fetchFeaturedListings, ListingWithCategory } from "./helpers";
 
 interface IconProps {
@@ -74,6 +75,7 @@ const colorClassMap: Record<string, { bg: string; text: string }> = {
 };
 
 export default function Home() {
+  const router = useRouter()
   const [categories, setCategories] = useState<Tables<"categories">[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [featuredListings, setFeaturedListings] = useState<ListingWithCategory[]>([]);
@@ -101,10 +103,11 @@ export default function Home() {
     }
 
     fetchData();
+    router.refresh();
   }, []);
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background" onLoad={() => { router.refresh(); }}>
 
       {/* Hero Section */}
       <div className="relative  bg-gradient-to-r from-indigo-900 to-indigo-800 dark:from-indigo-950 dark:to-indigo-900 overflow-hidden">
