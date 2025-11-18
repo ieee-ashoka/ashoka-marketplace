@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/utils/supabase/client";
+import type { JwtClaims } from "@/types/supabase";
 
 // Create a single Supabase client instance
 const supabase = createClient();
@@ -10,7 +11,10 @@ const supabase = createClient();
  */
 export async function checkUserLoggedIn(): Promise<boolean> {
   const { data } = await supabase.auth.getClaims();
-  return !!data?.claims;
+  if (!data?.claims) return false;
+
+  const claims = data.claims as JwtClaims;
+  return !!claims.sub;
 }
 
 /**

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import type { JwtClaims } from "@/types/supabase";
 
 // Create a single Supabase client instance
 const supabase = createClient();
@@ -22,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [userId, setUserId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const refreshUser = async () => {
+    const refreshUser = React.useCallback(async () => {
         try {
             // Add timeout to prevent infinite hanging
             const timeoutPromise = new Promise((_, reject) =>
@@ -42,30 +43,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            // Build user object from claims - no need for second getUser() call
-            const userId = data.claims.sub || null;
+            // Type-safe access to JWT claims
+            const claims = data.claims as JwtClaims;
+            const userId = claims.sub;
+
+            if (!userId) {
+                setUser(null);
+                setUserId(null);
+                return;
+            }
+
             setUserId(userId);
 
-            // Create a minimal user object from claims
-            if (userId) {
-                const userFromClaims: User = {
-                    id: userId,
-                    email: data.claims.email as string,
-                    user_metadata: data.claims.user_metadata || {},
-                    app_metadata: {},
-                    aud: 'authenticated',
-                    created_at: '',
-                } as User;
-                setUser(userFromClaims);
-            } else {
-                setUser(null);
-            }
+            // Build user object from properly typed claims
+            const userFromClaims: User = {
+                id: userId,
+                email: claims.email || '',
+                phone: claims.phone || '',
+                aud: typeof claims.aud === 'string' ? claims.aud : claims.aud[0] || 'authenticated',
+                created_at: new Date(claims.iat * 1000).toISOString(),
+                user_metadata: claims.user_metadata || {},
+                app_metadata: claims.app_metadata || {},
+                role: claims.role,
+            } as User;
+
+            setUser(userFromClaims);
         } catch (error) {
             console.error("Error refreshing user:", error);
             setUser(null);
             setUserId(null);
         }
-    };
+    }, []);
 
     useEffect(() => {
         let mounted = true;

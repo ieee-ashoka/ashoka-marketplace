@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/client";
 import { Tables } from "@/types/database.types";
+import type { JwtClaims } from "@/types/supabase";
 
 const supabase = createClient();
 
@@ -17,7 +18,8 @@ export async function getCurrentUserId(): Promise<string | null> {
     return null;
   }
 
-  return data.claims.sub || null;
+  const claims = data.claims as JwtClaims;
+  return claims.sub || null;
 }
 
 /**
