@@ -42,13 +42,13 @@ export async function fetchCategories(
 
 /**
  * Fetch featured listings excluding current user's listings
+ * @param limit - Number of listings to fetch
+ * @param currentUserId - Optional user ID to exclude their listings
  */
 export async function fetchFeaturedListings(
-  limit = 4
+  limit = 4,
+  currentUserId?: string | null
 ): Promise<ListingWithCategory[]> {
-  // Get current user ID
-  const currentUserId = await getCurrentUserId();
-
   const { data, error } = await supabase
     .from("listings")
     .select(
