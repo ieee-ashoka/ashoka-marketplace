@@ -17,7 +17,6 @@ import ProductCard from "../components/ProductCard";
 import { Tables } from "@/types/database.types";
 import { Button } from "@heroui/react";
 import CategoriesSkeleton from "../components/loading/categories";
-import { useRouter } from 'next/navigation'
 import { fetchCategories, fetchFeaturedListings, ListingWithCategory } from "./helpers";
 import { useAuth } from "./context/AuthContext";
 

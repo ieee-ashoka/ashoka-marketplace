@@ -64,7 +64,6 @@ export default function ProductCard({ isActive, showActive, product, className, 
     async function fetchInterestedCount() {
       const count = await getInterestedCount(product.id);
       setInterestedCount(count);
-      console.log("Interested count:", count);
     }
 
     fetchInterestedCount();

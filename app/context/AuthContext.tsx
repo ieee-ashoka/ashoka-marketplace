@@ -2,14 +2,13 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import type { User } from "@supabase/supabase-js";
 import type { JwtClaims } from "@/types/supabase";
 
 // Create a single Supabase client instance
 const supabase = createClient();
 
 interface AuthContextType {
-    user: User | null;
+    claims: JwtClaims | null;
     userId: string | null;
     isLoading: boolean;
     signOut: () => Promise<void>;
@@ -19,59 +18,46 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
+    const [claims, setClaims] = useState<JwtClaims | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const isRefreshing = React.useRef(false);
 
     const refreshUser = React.useCallback(async () => {
+        // Prevent concurrent refresh calls
+        if (isRefreshing.current) {
+            return;
+        }
+
         try {
-            // Add timeout to prevent infinite hanging
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Auth timeout')), 5000)
-            );
+            isRefreshing.current = true;
 
-            const claimsPromise = supabase.auth.getClaims();
-
-            const { data, error } = await Promise.race([
-                claimsPromise,
-                timeoutPromise
-            ]) as Awaited<typeof claimsPromise>;
+            const { data, error } = await supabase.auth.getClaims();
 
             if (error || !data?.claims) {
-                setUser(null);
+                setClaims(null);
                 setUserId(null);
                 return;
             }
 
             // Type-safe access to JWT claims
-            const claims = data.claims as JwtClaims;
-            const userId = claims.sub;
+            const jwtClaims = data.claims as JwtClaims;
+            const userId = jwtClaims.sub;
 
             if (!userId) {
-                setUser(null);
+                setClaims(null);
                 setUserId(null);
                 return;
             }
 
             setUserId(userId);
-
-            // Build user object from properly typed claims
-            const userFromClaims: User = {
-                id: userId,
-                email: claims.email || '',
-                phone: claims.phone || '',
-                aud: typeof claims.aud === 'string' ? claims.aud : claims.aud[0] || 'authenticated',
-                created_at: new Date(claims.iat * 1000).toISOString(),
-                user_metadata: claims.user_metadata || {},
-                app_metadata: claims.app_metadata || {},
-                role: claims.role,
-            } as User;
-
-            setUser(userFromClaims);
+            setClaims(jwtClaims);
         } catch (error) {
             console.error("Error refreshing user:", error);
-            setUser(null);
+            setClaims(null);
             setUserId(null);
+        } finally {
+            isRefreshing.current = false;
         }
     }, []);
 
@@ -92,14 +78,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Listen for auth changes
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange(async (event) => {
+        } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (!mounted) return;
 
-            if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+            // Only refresh on actual auth events, not on passive state changes
+            if (event === "SIGNED_IN") {
                 await refreshUser();
             } else if (event === "SIGNED_OUT") {
-                setUser(null);
+                setClaims(null);
                 setUserId(null);
+            } else if (event === "TOKEN_REFRESHED" && session) {
+                // Update claims directly from session instead of refetching
+                const jwtClaims = session.user as unknown as JwtClaims;
+                setClaims(jwtClaims);
+                setUserId(jwtClaims.sub);
             }
         });
 
@@ -107,18 +99,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             mounted = false;
             subscription.unsubscribe();
         };
-    }, []);
+    }, [refreshUser]);
 
     const signOut = async () => {
         await supabase.auth.signOut();
-        setUser(null);
+        setClaims(null);
         setUserId(null);
     };
 
     return (
         <AuthContext.Provider
             value={{
-                user,
+                claims,
                 userId,
                 isLoading,
                 signOut,

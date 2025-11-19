@@ -24,7 +24,7 @@ import { useAuth } from "@/app/context/AuthContext";
 export default function AppNavbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuth();
+  const { claims, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
 
@@ -123,7 +123,7 @@ export default function AppNavbar() {
           <NavbarItem>
             <div className="w-6 h-6 rounded-full border-2 border-t-transparent border-indigo-600 animate-spin"></div>
           </NavbarItem>
-        ) : user ? (
+        ) : claims ? (
           <>
             {/* User is logged in - show profile dropdown */}
             <Dropdown placement="bottom-end">
@@ -134,8 +134,8 @@ export default function AppNavbar() {
                   color="primary"
                   size="sm"
                   src={
-                    user.user_metadata?.avatar_url ||
-                    user.user_metadata?.picture ||
+                    claims.user_metadata?.avatar_url ||
+                    claims.user_metadata?.picture ||
                     ""
                   }
                   imgProps={{

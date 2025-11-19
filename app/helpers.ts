@@ -1,25 +1,10 @@
 import { createClient } from "@/utils/supabase/client";
 import { Tables } from "@/types/database.types";
-import type { JwtClaims } from "@/types/supabase";
 
 const supabase = createClient();
 
 export interface ListingWithCategory extends Tables<"listings"> {
   categories?: Tables<"categories"> | null;
-}
-
-/**
- * Get current user ID from JWT claims
- */
-export async function getCurrentUserId(): Promise<string | null> {
-  const { data, error } = await supabase.auth.getClaims();
-
-  if (error || !data?.claims) {
-    return null;
-  }
-
-  const claims = data.claims as JwtClaims;
-  return claims.sub || null;
 }
 
 /**
@@ -45,13 +30,13 @@ export async function fetchCategories(
 /**
  * Fetch featured listings excluding current user's listings
  * @param limit - Number of listings to fetch
- * @param currentUserId - Optional user ID to exclude their listings
+ * @param currentUserId - Optional user ID to exclude their listings (from useAuth)
  */
 export async function fetchFeaturedListings(
   limit = 4,
   currentUserId?: string | null
 ): Promise<ListingWithCategory[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("listings")
     .select(
       `
@@ -62,17 +47,19 @@ export async function fetchFeaturedListings(
         `
     )
     .order("created_at", { ascending: false })
-    .limit(20); // Fetch more to ensure we get enough after filtering
+    .limit(limit);
+
+  // Filter out current user's listings in SQL if userId is provided
+  if (currentUserId) {
+    query = query.neq("user_id", currentUserId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching featured listings:", error);
     return [];
   }
 
-  // Filter out current user's listings and take only the requested limit
-  const filteredListings = (data || [])
-    .filter((listing) => !currentUserId || listing.user_id !== currentUserId)
-    .slice(0, limit);
-
-  return filteredListings;
+  return data || [];
 }

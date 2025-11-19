@@ -18,7 +18,7 @@ const BottomBar = () => {
     const [isVisible, setIsVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [mounted, setMounted] = useState(false);
-    const { user } = useAuth();
+    const { claims } = useAuth();
 
     useEffect(() => {
         setMounted(true);
@@ -39,7 +39,7 @@ const BottomBar = () => {
         return () => window.removeEventListener("scroll", handleScroll);
     }, [lastScrollY]);
 
-    const pages = user
+    const pages = claims
         ? [
             { name: "Home", href: "/", icon: Home },
             { name: "Browse", href: "/browse", icon: Search },

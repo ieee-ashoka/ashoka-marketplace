@@ -10,8 +10,8 @@ import { useAuth } from "@/app/context/AuthContext";
 
 const Topbar = () => {
     const [mounted, setMounted] = useState(false);
-    const { user, isLoading: authLoading } = useAuth();
-
+    const { claims, isLoading: authLoading } = useAuth();
+    
     useEffect(() => {
         setMounted(true);
     }, []);
@@ -47,7 +47,7 @@ const Topbar = () => {
                 </div>
 
                 {/* Right: Avatar (fixed width) */}
-                {!authLoading && user && (
+                {!authLoading && claims && (
                     <div className="flex-shrink-0">
                         <Dropdown placement="bottom-end">
                             <DropdownTrigger>
@@ -58,8 +58,8 @@ const Topbar = () => {
                                     color="primary"
                                     size="sm"
                                     src={
-                                        user.user_metadata?.avatar_url ||
-                                        user.user_metadata?.picture ||
+                                        claims.user_metadata?.avatar_url ||
+                                        claims.user_metadata?.picture ||
                                         ""
                                     }
                                     imgProps={{
