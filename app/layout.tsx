@@ -84,7 +84,6 @@ export default function RootLayout({
       <body className="antialiased">
         <Providers>
           <AuthProvider>
-            <SplashScreen />
             <main className="flex min-h-screen flex-col bg-background">
               <InstallPrompt />
               <Topbar />
