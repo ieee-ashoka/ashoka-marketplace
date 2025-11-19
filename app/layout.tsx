@@ -6,6 +6,7 @@ import Footer from "@/components/nav/Footer";
 import Topbar from "@/components/nav/Topbar";
 import BottomBar from "@/components/nav/Bottombar";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
+import SplashScreen from "@/components/SplashScreen";
 import { AuthProvider } from "./context/AuthContext";
 
 export const metadata: Metadata = {
@@ -83,6 +84,7 @@ export default function RootLayout({
       <body className="antialiased">
         <Providers>
           <AuthProvider>
+            <SplashScreen />
             <main className="flex min-h-screen flex-col bg-background">
               <InstallPrompt />
               <Topbar />
